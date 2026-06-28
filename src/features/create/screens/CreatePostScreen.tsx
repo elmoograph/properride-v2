@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
-import { BackHandler, Pressable, StyleSheet, View } from "react-native";
+import { Alert, BackHandler, Pressable, StyleSheet, View } from "react-native";
 
 import {
   AppButton,
@@ -79,14 +79,24 @@ export function CreatePostScreen() {
   }
 
   function handleCreatePost() {
-    // Nanti diganti dengan submit real ke Supabase.
-    setStep(1);
-    setHasMedia(false);
-    setCaption("");
-    setSelectedMotorcycleId(null);
-    setVisibility("public");
+    Alert.alert(
+      "Post dibuat",
+      "Post berhasil dibuat. Data ini masih sementara sampai Supabase dihubungkan.",
+      [
+        {
+          text: "OK",
+          onPress: () => {
+            setStep(1);
+            setHasMedia(false);
+            setCaption("");
+            setSelectedMotorcycleId(null);
+            setVisibility("public");
 
-    router.back();
+            router.back();
+          },
+        },
+      ],
+    );
   }
 
   return (
