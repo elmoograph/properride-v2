@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { ChevronRight } from "lucide-react-native";
 import { Image, Pressable, StyleSheet, View } from "react-native";
 
@@ -14,6 +15,7 @@ export function GarageMotorcycleCard({
 }: GarageMotorcycleCardProps) {
   return (
     <Pressable
+      onPress={() => router.push(`/motorcycle/${motorcycle.id}`)}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
       <Image source={{ uri: motorcycle.imageUrl }} style={styles.image} />
