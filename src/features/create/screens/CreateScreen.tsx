@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { Bike, PackagePlus, PenSquare } from "lucide-react-native";
 import { StyleSheet, View } from "react-native";
 
@@ -20,18 +21,21 @@ export function CreateScreen() {
           icon={<PenSquare size={24} color={theme.primary} />}
           title="Buat Post"
           description="Bagikan momen, cerita ride, atau inspirasi ke komunitas."
+          onPress={() => router.push("/(create)/create-post")}
         />
 
         <CreateActionCard
           icon={<Bike size={24} color={theme.primary} />}
           title="Tambah Motor"
           description="Simpan motor kamu ke Garage agar bisa terhubung ke post."
+          onPress={() => router.push("/(create)/add-motorcycle")}
         />
 
         <CreateActionCard
           icon={<PackagePlus size={24} color={theme.primary} />}
           title="Tambah Part"
           description="Catat part atau aksesori yang kamu gunakan di motor."
+          onPress={() => router.push("/(create)/add-part")}
         />
       </View>
 
