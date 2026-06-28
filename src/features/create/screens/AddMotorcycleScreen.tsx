@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import { Alert, Pressable, StyleSheet, TextInput, View } from "react-native";
 
 import {
   AppButton,
@@ -44,6 +44,23 @@ export function AddMotorcycleScreen() {
   function handleEngineCcChange(value: string) {
     const numericValue = value.replace(/\D/g, "");
     setEngineCc(numericValue);
+  }
+
+  function handleSaveMotorcycle() {
+    if (isSubmitDisabled) {
+      return;
+    }
+
+    Alert.alert(
+      "Motor tersimpan",
+      "Motor berhasil ditambahkan ke Garage. Data ini masih sementara sampai Supabase dihubungkan.",
+      [
+        {
+          text: "OK",
+          onPress: () => router.back(),
+        },
+      ],
+    );
   }
 
   return (
@@ -132,7 +149,11 @@ export function AddMotorcycleScreen() {
           </View>
         </View>
 
-        <AppButton disabled={isSubmitDisabled} style={styles.submitButton}>
+        <AppButton
+          disabled={isSubmitDisabled}
+          style={styles.submitButton}
+          onPress={handleSaveMotorcycle}
+        >
           Simpan Motor
         </AppButton>
 

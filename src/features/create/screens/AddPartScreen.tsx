@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import { useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Alert, Pressable, StyleSheet, View } from "react-native";
 
 import {
   AppButton,
@@ -45,6 +45,23 @@ export function AddPartScreen() {
     if (nextBrand !== "custom") {
       setCustomBrand("");
     }
+  }
+
+  function handleSavePart() {
+    if (isSubmitDisabled) {
+      return;
+    }
+
+    Alert.alert(
+      "Part tersimpan",
+      "Part berhasil ditambahkan ke motor terkait. Data ini masih sementara sampai Supabase dihubungkan.",
+      [
+        {
+          text: "OK",
+          onPress: () => router.back(),
+        },
+      ],
+    );
   }
 
   return (
@@ -128,7 +145,11 @@ export function AddPartScreen() {
           </View>
         </View>
 
-        <AppButton disabled={isSubmitDisabled} style={styles.submitButton}>
+        <AppButton
+          disabled={isSubmitDisabled}
+          style={styles.submitButton}
+          onPress={handleSavePart}
+        >
           Simpan Part
         </AppButton>
 
