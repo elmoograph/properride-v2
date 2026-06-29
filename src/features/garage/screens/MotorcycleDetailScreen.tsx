@@ -5,7 +5,6 @@ import {
   ChevronRight,
   Edit3,
   Gauge,
-  ImagePlus,
   Package,
   Rows3,
 } from "lucide-react-native";
@@ -18,22 +17,21 @@ import {
   AppScreen,
   AppText,
 } from "@/src/shared/components";
-import { galleryItems, motorcycles } from "@/src/shared/constants/mockData";
+import {
+  motorcycles,
+  motorcycleGalleryItems,
+  motorcycleParts,
+  motorcycleTimelineItems,
+} from "@/src/shared/constants/mockData";
+import type { MotorcyclePart } from "@/src/shared/types/app.types";
 import { radius, spacing, theme } from "@/src/shared/theme";
 import { GarageGalleryStrip } from "@/src/features/garage/components/GarageGalleryStrip";
 
 type DetailTab = "setup" | "timeline" | "gallery";
 
-type MockPart = {
-  id: string;
-  category: string;
-  brand: string;
-  name: string;
-};
-
 type PartCategoryGroup = {
   category: string;
-  parts: MockPart[];
+  parts: MotorcyclePart[];
 };
 
 const detailTabs: Array<{
@@ -54,69 +52,24 @@ const detailTabs: Array<{
   },
 ];
 
-const mockParts: MockPart[] = [
-  {
-    id: "part-1",
-    category: "Exhaust",
-    brand: "R9",
-    name: "Alpha Series",
-  },
-  {
-    id: "part-2",
-    category: "Suspension",
-    brand: "YSS",
-    name: "G-Sport",
-  },
-  {
-    id: "part-3",
-    category: "Brake",
-    brand: "Brembo",
-    name: "Caliper 2P",
-  },
-  {
-    id: "part-4",
-    category: "Brake",
-    brand: "TDR",
-    name: "Brake Hose",
-  },
-  {
-    id: "part-5",
-    category: "Lighting",
-    brand: "Koso",
-    name: "LED Signal",
-  },
-];
-
-const mockTimeline = [
-  {
-    id: "timeline-1",
-    date: "24 Jun 2026",
-    action: "Part ditambahkan",
-    title: "Alpha Series",
-    description: "R9 ditambahkan ke kategori Exhaust.",
-  },
-  {
-    id: "timeline-2",
-    date: "18 Jun 2026",
-    action: "Part ditambahkan",
-    title: "G-Sport",
-    description: "YSS ditambahkan ke kategori Suspension.",
-  },
-  {
-    id: "timeline-3",
-    date: "14 Jun 2026",
-    action: "Part dilepas",
-    title: "Cover CVT",
-    description: "Part dilepas dari setup motor ini.",
-  },
-];
-
 export function MotorcycleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<DetailTab>("setup");
 
   const motorcycle =
     motorcycles.find((item) => item.id === id) ?? motorcycles[0];
+
+  const parts = motorcycleParts.filter(
+    (part) => part.motorcycleId === motorcycle.id,
+  );
+
+  const timelineItems = motorcycleTimelineItems.filter(
+    (item) => item.motorcycleId === motorcycle.id,
+  );
+
+  const gallery = motorcycleGalleryItems.filter(
+    (item) => item.motorcycleId === motorcycle.id,
+  );
 
   return (
     <AppScreen scrollable padded={false}>
@@ -169,7 +122,7 @@ export function MotorcycleDetailScreen() {
             >
               Parts
             </AppText>
-            <AppText variant="bodyMedium">{mockParts.length} item</AppText>
+            <AppText variant="bodyMedium">{parts.length} item</AppText>
           </AppCard>
 
           <AppCard style={styles.statCard}>
@@ -208,18 +161,26 @@ export function MotorcycleDetailScreen() {
 
         <View style={styles.tabContent}>
           {activeTab === "setup" ? (
-            <SetupPartsTab motorcycleId={motorcycle.id} />
+            <SetupPartsTab motorcycleId={motorcycle.id} parts={parts} />
           ) : null}
-          {activeTab === "timeline" ? <TimelineTab /> : null}
-          {activeTab === "gallery" ? <GalleryTab /> : null}
+          {activeTab === "timeline" ? (
+            <TimelineTab timelineItems={timelineItems} />
+          ) : null}
+          {activeTab === "gallery" ? <GalleryTab gallery={gallery} /> : null}
         </View>
       </View>
     </AppScreen>
   );
 }
 
-function SetupPartsTab({ motorcycleId }: { motorcycleId: string }) {
-  const groupedParts = groupPartsByCategory(mockParts);
+function SetupPartsTab({
+  motorcycleId,
+  parts,
+}: {
+  motorcycleId: string;
+  parts: MotorcyclePart[];
+}) {
+  const groupedParts = groupPartsByCategory(parts);
   const [expandedCategories, setExpandedCategories] = useState<
     Record<string, boolean>
   >(() =>
@@ -251,60 +212,71 @@ function SetupPartsTab({ motorcycleId }: { motorcycleId: string }) {
         </View>
       </View>
 
-      <View style={styles.categoryList}>
-        {groupedParts.map((group) => {
-          const isExpanded = expandedCategories[group.category];
+      {groupedParts.length === 0 ? (
+        <AppCard style={styles.emptyCard}>
+          <AppText variant="bodyMedium">Belum ada part</AppText>
+          <AppText variant="caption" tone="secondary" style={styles.emptyText}>
+            Tambahkan part pertama untuk mulai mencatat setup motor ini.
+          </AppText>
+        </AppCard>
+      ) : null}
 
-          return (
-            <View key={group.category} style={styles.categoryAccordion}>
-              <Pressable
-                onPress={() => toggleCategory(group.category)}
-                style={({ pressed }) => [
-                  styles.accordionHeader,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <View style={styles.accordionTitle}>
-                  <AppText variant="bodyMedium">{group.category}</AppText>
+      {groupedParts.length > 0 ? (
+        <View style={styles.categoryList}>
+          {groupedParts.map((group) => {
+            const isExpanded = expandedCategories[group.category];
 
-                  <View style={styles.categoryCountPill}>
-                    <AppText variant="tiny" tone="secondary">
-                      {group.parts.length} item
-                    </AppText>
+            return (
+              <View key={group.category} style={styles.categoryAccordion}>
+                <Pressable
+                  onPress={() => toggleCategory(group.category)}
+                  style={({ pressed }) => [
+                    styles.accordionHeader,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <View style={styles.accordionTitle}>
+                    <AppText variant="bodyMedium">{group.category}</AppText>
+
+                    <View style={styles.categoryCountPill}>
+                      <AppText variant="tiny" tone="secondary">
+                        {group.parts.length} item
+                      </AppText>
+                    </View>
                   </View>
-                </View>
+
+                  {isExpanded ? (
+                    <ChevronDown size={18} color={theme.textMuted} />
+                  ) : (
+                    <ChevronRight size={18} color={theme.textMuted} />
+                  )}
+                </Pressable>
 
                 {isExpanded ? (
-                  <ChevronDown size={18} color={theme.textMuted} />
-                ) : (
-                  <ChevronRight size={18} color={theme.textMuted} />
-                )}
-              </Pressable>
+                  <View style={styles.partList}>
+                    {group.parts.map((part) => (
+                      <View key={part.id} style={styles.partRow}>
+                        <View style={styles.partDot} />
 
-              {isExpanded ? (
-                <View style={styles.partList}>
-                  {group.parts.map((part) => (
-                    <View key={part.id} style={styles.partRow}>
-                      <View style={styles.partDot} />
-
-                      <View style={styles.partText}>
-                        <AppText variant="bodyMedium">{part.name}</AppText>
-                        <AppText
-                          variant="caption"
-                          tone="secondary"
-                          style={styles.partMeta}
-                        >
-                          By {part.brand}
-                        </AppText>
+                        <View style={styles.partText}>
+                          <AppText variant="bodyMedium">{part.name}</AppText>
+                          <AppText
+                            variant="caption"
+                            tone="secondary"
+                            style={styles.partMeta}
+                          >
+                            By {part.brand}
+                          </AppText>
+                        </View>
                       </View>
-                    </View>
-                  ))}
-                </View>
-              ) : null}
-            </View>
-          );
-        })}
-      </View>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
 
       <AppButton
         style={styles.bottomButton}
@@ -318,7 +290,11 @@ function SetupPartsTab({ motorcycleId }: { motorcycleId: string }) {
   );
 }
 
-function TimelineTab() {
+function TimelineTab({
+  timelineItems,
+}: {
+  timelineItems: typeof motorcycleTimelineItems;
+}) {
   return (
     <View>
       <View style={styles.sectionHeader}>
@@ -335,9 +311,8 @@ function TimelineTab() {
       </View>
 
       <View style={styles.timelineList}>
-        {mockTimeline.map((item, index) => {
-          const isLastItem = index === mockTimeline.length - 1;
-
+        {timelineItems.map((item, index) => {
+          const isLastItem = index === timelineItems.length - 1;
           return (
             <View key={item.id} style={styles.timelineItem}>
               <View style={styles.timelineIndicator}>
@@ -376,7 +351,7 @@ function TimelineTab() {
   );
 }
 
-function GalleryTab() {
+function GalleryTab({ gallery }: { gallery: typeof motorcycleGalleryItems }) {
   return (
     <View>
       <View style={styles.sectionHeader}>
@@ -392,7 +367,7 @@ function GalleryTab() {
         </View>
       </View>
 
-      <GarageGalleryStrip items={galleryItems} />
+      <GarageGalleryStrip items={gallery} />
 
       <AppButton
         style={styles.bottomButton}
@@ -409,15 +384,18 @@ function GalleryTab() {
   );
 }
 
-function groupPartsByCategory(parts: MockPart[]): PartCategoryGroup[] {
-  const grouped = parts.reduce<Record<string, MockPart[]>>((result, part) => {
-    if (!result[part.category]) {
-      result[part.category] = [];
-    }
+function groupPartsByCategory(parts: MotorcyclePart[]): PartCategoryGroup[] {
+  const grouped = parts.reduce<Record<string, MotorcyclePart[]>>(
+    (result, part) => {
+      if (!result[part.category]) {
+        result[part.category] = [];
+      }
 
-    result[part.category].push(part);
-    return result;
-  }, {});
+      result[part.category].push(part);
+      return result;
+    },
+    {},
+  );
 
   return Object.entries(grouped).map(([category, categoryParts]) => ({
     category,
@@ -626,5 +604,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: spacing.md,
+  },
+
+  emptyCard: {
+    alignItems: "flex-start",
+  },
+  emptyText: {
+    marginTop: spacing.xs,
   },
 });

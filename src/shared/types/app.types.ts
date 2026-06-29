@@ -43,3 +43,26 @@ export type BuilderProfile = {
   avatarUrl: string;
   garageName: string;
 };
+
+export type MotorcyclePart = {
+  id: string;
+  motorcycleId: string;
+  category: string;
+  brand: string;
+  name: string;
+};
+
+export type MotorcycleTimelineItem = {
+  id: string;
+  motorcycleId: string;
+  date: string;
+  action: "Part ditambahkan" | "Part dilepas" | "Gallery ditambahkan";
+  title: string;
+  description: string;
+};
+
+export type MotorcycleGalleryItem = {
+  id: string;
+  motorcycleId: string;
+  imageUrl: string;
+};
