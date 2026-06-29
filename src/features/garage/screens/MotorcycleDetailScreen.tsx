@@ -9,7 +9,7 @@ import {
   Rows3,
 } from "lucide-react-native";
 import { useState } from "react";
-import { Alert, Image, Pressable, StyleSheet, View } from "react-native";
+import { Image, Pressable, StyleSheet, View } from "react-native";
 
 import {
   AppButton,
@@ -168,7 +168,9 @@ export function MotorcycleDetailScreen() {
             <TimelineTab timelineItems={timelineItems} />
           ) : null}
 
-          {activeTab === "gallery" ? <GalleryTab gallery={gallery} /> : null}
+          {activeTab === "gallery" ? (
+            <GalleryTab gallery={gallery} motorcycleId={motorcycle.id} />
+          ) : null}
         </View>
       </View>
     </AppScreen>
@@ -365,7 +367,13 @@ function TimelineTab({
   );
 }
 
-function GalleryTab({ gallery }: { gallery: typeof motorcycleGalleryItems }) {
+function GalleryTab({
+  gallery,
+  motorcycleId,
+}: {
+  gallery: typeof motorcycleGalleryItems;
+  motorcycleId: string;
+}) {
   return (
     <View>
       <View style={styles.sectionHeader}>
@@ -394,12 +402,9 @@ function GalleryTab({ gallery }: { gallery: typeof motorcycleGalleryItems }) {
 
       <AppButton
         style={styles.bottomButton}
-        onPress={() => {
-          Alert.alert(
-            "Add Gallery",
-            "Form Add Gallery akan dibuat setelah flow motor dan part stabil.",
-          );
-        }}
+        onPress={() =>
+          router.push(`/(create)/add-gallery?motorcycleId=${motorcycleId}`)
+        }
       >
         Add Gallery
       </AppButton>
