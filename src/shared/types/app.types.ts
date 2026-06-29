@@ -28,6 +28,8 @@ export type FeedPost = {
   relatedMotorcycleName: string;
   relatedMotorcycleId?: string;
   category: MotorcycleType;
+  visibility?: "public" | "private";
+  status?: "published" | "archived" | "deleted";
 };
 
 export type Motorcycle = {
@@ -74,4 +76,5 @@ export type MotorcycleGalleryItem = {
   id: string;
   motorcycleId: string;
   imageUrl: string;
+  caption?: string;
 };

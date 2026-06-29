@@ -165,30 +165,35 @@ export const motorcycleGalleryItems: MotorcycleGalleryItem[] = [
     motorcycleId: "motorcycle-1",
     imageUrl:
       "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=600",
+    caption: "Detail setup depan.",
   },
   {
     id: "motorcycle-gallery-2",
     motorcycleId: "motorcycle-1",
     imageUrl:
       "https://images.unsplash.com/photo-1558981852-426c6c22a060?q=80&w=600",
+    caption: "Angle samping setelah update part.",
   },
   {
     id: "motorcycle-gallery-3",
     motorcycleId: "motorcycle-1",
     imageUrl:
       "https://images.unsplash.com/photo-1558981359-219d6364c9c8?q=80&w=600",
+    caption: "Detail clean look.",
   },
   {
     id: "motorcycle-gallery-4",
     motorcycleId: "motorcycle-2",
     imageUrl:
       "https://images.unsplash.com/photo-1609630875171-b1321377ee65?q=80&w=600",
+    caption: "Setup Aerox daily.",
   },
   {
     id: "motorcycle-gallery-5",
     motorcycleId: "motorcycle-2",
     imageUrl:
       "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=600",
+    caption: "Detail riding angle.",
   },
 ];
 

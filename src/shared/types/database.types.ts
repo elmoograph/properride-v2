@@ -2,6 +2,8 @@ export type Visibility = "public" | "private";
 
 export type MotorcycleStatus = "in_progress" | "completed" | "on_hold";
 
+export type PostStatus = "published" | "archived" | "deleted";
+
 export type PostMediaType = "image" | "video";
 
 export type TimelineAction =
@@ -14,6 +16,7 @@ export type ProfileRow = {
   id: string;
   full_name: string;
   username: string;
+  garage_name: string | null;
   avatar_url: string | null;
   location: string | null;
   bio: string | null;
@@ -24,6 +27,7 @@ export type ProfileRow = {
 export type MotorcycleRow = {
   id: string;
   user_id: string;
+  name: string | null;
   brand: string;
   model: string;
   year: string;
@@ -72,6 +76,7 @@ export type PostRow = {
   motorcycle_id: string | null;
   caption: string;
   visibility: Visibility;
+  status: PostStatus;
   created_at: string;
   updated_at: string;
 };
@@ -83,4 +88,27 @@ export type PostMediaRow = {
   media_type: PostMediaType;
   order_index: number;
   created_at: string;
+};
+
+export type PostLikeRow = {
+  id: string;
+  post_id: string;
+  user_id: string;
+  created_at: string;
+};
+
+export type PostSaveRow = {
+  id: string;
+  post_id: string;
+  user_id: string;
+  created_at: string;
+};
+
+export type CommentRow = {
+  id: string;
+  post_id: string;
+  user_id: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
 };
