@@ -9,6 +9,7 @@ export type MotorcycleType =
 
 export type FeedPost = {
   id: string;
+  userId: string;
   builderName: string;
   avatarUrl: string;
   location: string;
@@ -18,6 +19,7 @@ export type FeedPost = {
   likesCount: number;
   commentsCount: number;
   relatedMotorcycleName: string;
+  relatedMotorcycleId?: string;
   category: MotorcycleType;
 };
 

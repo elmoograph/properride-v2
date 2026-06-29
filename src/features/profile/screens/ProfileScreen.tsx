@@ -9,12 +9,19 @@ import {
 import { StyleSheet, View } from "react-native";
 
 import { AppScreen, AppText } from "@/src/shared/components";
-import { builderProfile } from "@/src/shared/constants/mockData";
+import {
+  builderProfile,
+  currentUser,
+  feedPosts,
+} from "@/src/shared/constants/mockData";
 import { spacing, theme } from "@/src/shared/theme";
 import { ProfileHeader } from "@/src/features/profile/components/ProfileHeader";
 import { ProfileMenuItem } from "@/src/features/profile/components/ProfileMenuItem";
+import { ProfilePostGrid } from "@/src/features/profile/components/ProfilePostGrid";
 
 export function ProfileScreen() {
+  const myPosts = feedPosts.filter((post) => post.userId === currentUser.id);
+
   return (
     <AppScreen scrollable>
       <View style={styles.header}>
@@ -26,6 +33,27 @@ export function ProfileScreen() {
 
       <View style={styles.content}>
         <ProfileHeader profile={builderProfile} />
+
+        <View style={styles.postsSection}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionText}>
+              <AppText variant="title">My Posts</AppText>
+              <AppText
+                variant="caption"
+                tone="secondary"
+                style={styles.sectionSubtitle}
+              >
+                Post yang kamu buat dan tampil di Feed.
+              </AppText>
+            </View>
+
+            <AppText variant="caption" tone="muted">
+              {myPosts.length} post
+            </AppText>
+          </View>
+
+          <ProfilePostGrid posts={myPosts} />
+        </View>
 
         <View style={styles.menuSection}>
           <AppText variant="title">Account</AppText>
@@ -58,7 +86,7 @@ export function ProfileScreen() {
           </View>
         </View>
 
-        <View style={styles.menuSection}>
+        <View style={styles.logoutSection}>
           <ProfileMenuItem
             icon={<LogOut size={18} color={theme.danger} />}
             title="Keluar"
@@ -80,11 +108,30 @@ const styles = StyleSheet.create({
   content: {
     marginTop: spacing.xl,
   },
+  postsSection: {
+    marginTop: spacing.section,
+  },
+  sectionHeader: {
+    marginBottom: spacing.md,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
+  sectionText: {
+    flex: 1,
+  },
+  sectionSubtitle: {
+    marginTop: spacing.xs,
+  },
   menuSection: {
     marginTop: spacing.section,
     gap: spacing.md,
   },
   menuList: {
     gap: spacing.sm,
+  },
+  logoutSection: {
+    marginTop: spacing.section,
   },
 });

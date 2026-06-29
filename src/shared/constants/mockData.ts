@@ -17,6 +17,12 @@ export const builderProfile: BuilderProfile = {
   garageName: "Ryan Pratama Garage",
 };
 
+export const currentUser = {
+  id: "user-1",
+  name: "Ryan Pratama",
+  username: "ryanpratama",
+};
+
 export const motorcycles: Motorcycle[] = [
   {
     id: "motorcycle-1",
@@ -189,6 +195,8 @@ export const motorcycleGalleryItems: MotorcycleGalleryItem[] = [
 export const feedPosts: FeedPost[] = [
   {
     id: "post-1",
+    userId: "user-1",
+    relatedMotorcycleId: "motorcycle-1",
     builderName: "Ryan Pratama",
     avatarUrl:
       "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=400",
@@ -205,6 +213,8 @@ export const feedPosts: FeedPost[] = [
   },
   {
     id: "post-2",
+    userId: "user-2",
+    relatedMotorcycleId: "motorcycle-1",
     builderName: "Dimas Wicaksono",
     avatarUrl:
       "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=400",
@@ -221,6 +231,8 @@ export const feedPosts: FeedPost[] = [
   },
   {
     id: "post-3",
+    userId: "user-3",
+    relatedMotorcycleId: "motorcycle-1",
     builderName: "Andra Garage",
     avatarUrl:
       "https://images.unsplash.com/photo-1527980965255-d3b416303d12?q=80&w=400",
