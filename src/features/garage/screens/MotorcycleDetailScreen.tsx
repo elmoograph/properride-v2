@@ -23,9 +23,9 @@ import {
   motorcycleParts,
   motorcycleTimelineItems,
 } from "@/src/shared/constants/mockData";
-import type { MotorcyclePart } from "@/src/shared/types/app.types";
-import { radius, spacing, theme } from "@/src/shared/theme";
 import { GarageGalleryStrip } from "@/src/features/garage/components/GarageGalleryStrip";
+import { radius, spacing, theme } from "@/src/shared/theme";
+import type { MotorcyclePart } from "@/src/shared/types/app.types";
 
 type DetailTab = "setup" | "timeline" | "gallery";
 
@@ -163,9 +163,11 @@ export function MotorcycleDetailScreen() {
           {activeTab === "setup" ? (
             <SetupPartsTab motorcycleId={motorcycle.id} parts={parts} />
           ) : null}
+
           {activeTab === "timeline" ? (
             <TimelineTab timelineItems={timelineItems} />
           ) : null}
+
           {activeTab === "gallery" ? <GalleryTab gallery={gallery} /> : null}
         </View>
       </View>
@@ -310,43 +312,55 @@ function TimelineTab({
         </View>
       </View>
 
-      <View style={styles.timelineList}>
-        {timelineItems.map((item, index) => {
-          const isLastItem = index === timelineItems.length - 1;
-          return (
-            <View key={item.id} style={styles.timelineItem}>
-              <View style={styles.timelineIndicator}>
-                <View style={styles.timelineDot} />
-                {!isLastItem ? <View style={styles.timelineLine} /> : null}
-              </View>
+      {timelineItems.length === 0 ? (
+        <AppCard style={styles.emptyCard}>
+          <AppText variant="bodyMedium">Belum ada timeline</AppText>
+          <AppText variant="caption" tone="secondary" style={styles.emptyText}>
+            Timeline akan terisi otomatis saat part ditambahkan atau dilepas.
+          </AppText>
+        </AppCard>
+      ) : null}
 
-              <AppCard style={styles.timelineCard}>
-                <View style={styles.timelineTopRow}>
-                  <AppText variant="caption" tone="accent">
-                    {item.action}
-                  </AppText>
+      {timelineItems.length > 0 ? (
+        <View style={styles.timelineList}>
+          {timelineItems.map((item, index) => {
+            const isLastItem = index === timelineItems.length - 1;
 
-                  <AppText variant="caption" tone="muted">
-                    {item.date}
-                  </AppText>
+            return (
+              <View key={item.id} style={styles.timelineItem}>
+                <View style={styles.timelineIndicator}>
+                  <View style={styles.timelineDot} />
+                  {!isLastItem ? <View style={styles.timelineLine} /> : null}
                 </View>
 
-                <AppText variant="bodyMedium" style={styles.timelineTitle}>
-                  {item.title}
-                </AppText>
+                <AppCard style={styles.timelineCard}>
+                  <View style={styles.timelineTopRow}>
+                    <AppText variant="caption" tone="accent">
+                      {item.action}
+                    </AppText>
 
-                <AppText
-                  variant="caption"
-                  tone="secondary"
-                  style={styles.timelineDescription}
-                >
-                  {item.description}
-                </AppText>
-              </AppCard>
-            </View>
-          );
-        })}
-      </View>
+                    <AppText variant="caption" tone="muted">
+                      {item.date}
+                    </AppText>
+                  </View>
+
+                  <AppText variant="bodyMedium" style={styles.timelineTitle}>
+                    {item.title}
+                  </AppText>
+
+                  <AppText
+                    variant="caption"
+                    tone="secondary"
+                    style={styles.timelineDescription}
+                  >
+                    {item.description}
+                  </AppText>
+                </AppCard>
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -367,7 +381,16 @@ function GalleryTab({ gallery }: { gallery: typeof motorcycleGalleryItems }) {
         </View>
       </View>
 
-      <GarageGalleryStrip items={gallery} />
+      {gallery.length === 0 ? (
+        <AppCard style={styles.emptyCard}>
+          <AppText variant="bodyMedium">Belum ada foto</AppText>
+          <AppText variant="caption" tone="secondary" style={styles.emptyText}>
+            Tambahkan foto untuk mulai membangun galeri motor ini.
+          </AppText>
+        </AppCard>
+      ) : (
+        <GarageGalleryStrip items={gallery} />
+      )}
 
       <AppButton
         style={styles.bottomButton}
@@ -587,10 +610,22 @@ const styles = StyleSheet.create({
   timelineCard: {
     flex: 1,
   },
+  timelineTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
   timelineTitle: {
     marginTop: spacing.xs,
   },
   timelineDescription: {
+    marginTop: spacing.xs,
+  },
+  emptyCard: {
+    alignItems: "flex-start",
+  },
+  emptyText: {
     marginTop: spacing.xs,
   },
   bottomButton: {
@@ -598,18 +633,5 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.82,
-  },
-  timelineTopRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.md,
-  },
-
-  emptyCard: {
-    alignItems: "flex-start",
-  },
-  emptyText: {
-    marginTop: spacing.xs,
   },
 });
