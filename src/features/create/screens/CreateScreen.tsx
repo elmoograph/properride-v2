@@ -34,8 +34,8 @@ export function CreateScreen() {
         <CreateActionCard
           icon={<PackagePlus size={24} color={theme.primary} />}
           title="Tambah Part"
-          description="Catat part atau aksesori yang kamu gunakan di motor."
-          onPress={() => router.push("/(create)/add-part")}
+          description="Pilih motor dulu, lalu catat part yang terpasang."
+          onPress={() => router.push("/(create)/select-motorcycle-for-part")}
         />
       </View>
 
