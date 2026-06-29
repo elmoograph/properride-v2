@@ -7,6 +7,12 @@ export type MotorcycleType =
   | "Daily"
   | "Racing";
 
+export type PostMedia = {
+  id: string;
+  url: string;
+  type: "image" | "video";
+};
+
 export type FeedPost = {
   id: string;
   userId: string;
@@ -14,6 +20,7 @@ export type FeedPost = {
   avatarUrl: string;
   location: string;
   imageUrl: string;
+  media?: PostMedia[];
   caption: string;
   createdAt: string;
   likesCount: number;

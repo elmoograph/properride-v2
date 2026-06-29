@@ -10,6 +10,7 @@ import { Image, Pressable, StyleSheet, View } from "react-native";
 import { AppText } from "@/src/shared/components";
 import { radius, spacing, theme } from "@/src/shared/theme";
 import type { FeedPost as FeedPostType } from "@/src/shared/types/app.types";
+import { PostMediaCarousel } from "./PostMediaCarousel";
 
 type FeedPostProps = {
   post: FeedPostType;
@@ -42,9 +43,7 @@ export function FeedPost({ post, onPress, onPressMotorcycle }: FeedPostProps) {
       </View>
 
       <View style={styles.imageWrap}>
-        <Pressable onPress={onPress}>
-          <Image source={{ uri: post.imageUrl }} style={styles.image} />
-        </Pressable>
+        <PostMediaCarousel post={post} onPress={onPress} />
 
         {hasRelatedMotorcycle ? (
           <Pressable
@@ -123,11 +122,6 @@ const styles = StyleSheet.create({
   imageWrap: {
     position: "relative",
     width: "100%",
-  },
-  image: {
-    width: "100%",
-    aspectRatio: 4 / 5,
-    backgroundColor: theme.surfaceSoft,
   },
   motorcycleFloatingButton: {
     position: "absolute",

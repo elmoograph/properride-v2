@@ -16,6 +16,7 @@ import {
 } from "@/src/shared/components";
 import { feedPosts, motorcycles } from "@/src/shared/constants/mockData";
 import { radius, spacing, theme } from "@/src/shared/theme";
+import { PostMediaCarousel } from "@/src/features/feed/components/PostMediaCarousel";
 
 export function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -41,7 +42,7 @@ export function PostDetailScreen() {
         </View>
       </View>
 
-      <Image source={{ uri: post.imageUrl }} style={styles.postImage} />
+      <PostMediaCarousel post={post} />
 
       <View style={styles.content}>
         <View style={styles.authorRow}>
@@ -143,11 +144,6 @@ const styles = StyleSheet.create({
   },
   headerText: {
     flex: 1,
-  },
-  postImage: {
-    width: "100%",
-    aspectRatio: 4 / 5,
-    backgroundColor: theme.surfaceSoft,
   },
   content: {
     padding: spacing.lg,

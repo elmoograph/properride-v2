@@ -210,6 +210,23 @@ export const feedPosts: FeedPost[] = [
     commentsCount: 24,
     relatedMotorcycleName: "NMAX Atlas",
     category: "NMAX",
+    media: [
+      {
+        id: "post-1-media-1",
+        url: "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=900",
+        type: "image",
+      },
+      {
+        id: "post-1-media-2",
+        url: "https://images.unsplash.com/photo-1558981852-426c6c22a060?q=80&w=900",
+        type: "image",
+      },
+      {
+        id: "post-1-media-3",
+        url: "https://images.unsplash.com/photo-1558981359-219d6364c9c8?q=80&w=900",
+        type: "image",
+      },
+    ],
   },
   {
     id: "post-2",
@@ -228,6 +245,13 @@ export const feedPosts: FeedPost[] = [
     commentsCount: 13,
     relatedMotorcycleName: "Aerox Blue",
     category: "Aerox",
+    media: [
+      {
+        id: "post-2-media-1",
+        url: "https://images.unsplash.com/photo-1609630875171-b1321377ee65?q=80&w=1200",
+        type: "image",
+      },
+    ],
   },
   {
     id: "post-3",
@@ -245,6 +269,13 @@ export const feedPosts: FeedPost[] = [
     commentsCount: 8,
     relatedMotorcycleName: "PCX Daily",
     category: "PCX",
+    media: [
+      {
+        id: "post-3-media-1",
+        url: "https://images.unsplash.com/photo-1558981033-0f0309284409?q=80&w=1200",
+        type: "image",
+      },
+    ],
   },
 ];
 
