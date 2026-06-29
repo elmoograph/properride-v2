@@ -3,6 +3,7 @@ import { Image, Pressable, StyleSheet, View } from "react-native";
 import { AppText } from "@/src/shared/components";
 import { radius, spacing, theme } from "@/src/shared/theme";
 import type { FeedPost } from "@/src/shared/types/app.types";
+import { router } from "expo-router";
 
 type ProfilePostGridProps = {
   posts: FeedPost[];
@@ -23,7 +24,11 @@ export function ProfilePostGrid({ posts }: ProfilePostGridProps) {
   return (
     <View style={styles.grid}>
       {posts.map((post) => (
-        <Pressable key={post.id} style={styles.gridItem}>
+        <Pressable
+          key={post.id}
+          style={styles.gridItem}
+          onPress={() => router.push(`/post/${post.id}`)}
+        >
           <Image source={{ uri: post.imageUrl }} style={styles.image} />
         </Pressable>
       ))}

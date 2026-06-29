@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { Search, Bell } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
@@ -48,7 +49,16 @@ export function FeedScreen() {
 
       <View style={styles.feedList}>
         {filteredPosts.map((post) => (
-          <FeedPost key={post.id} post={post} />
+          <FeedPost
+            key={post.id}
+            post={post}
+            onPress={() => router.push(`/post/${post.id}`)}
+            onPressMotorcycle={() => {
+              if (post.relatedMotorcycleId) {
+                router.push(`/motorcycle/${post.relatedMotorcycleId}`);
+              }
+            }}
+          />
         ))}
       </View>
     </AppScreen>

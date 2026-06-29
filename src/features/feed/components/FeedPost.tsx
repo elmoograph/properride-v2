@@ -1,4 +1,5 @@
 import {
+  Bike,
   Bookmark,
   Heart,
   MessageCircle,
@@ -7,15 +8,18 @@ import {
 import { Image, Pressable, StyleSheet, View } from "react-native";
 
 import { AppText } from "@/src/shared/components";
-import type { FeedPost as FeedPostType } from "@/src/shared/types/app.types";
 import { radius, spacing, theme } from "@/src/shared/theme";
-import { RelatedMotorChip } from "./RelatedMotorChip";
+import type { FeedPost as FeedPostType } from "@/src/shared/types/app.types";
 
 type FeedPostProps = {
   post: FeedPostType;
+  onPress?: () => void;
+  onPressMotorcycle?: () => void;
 };
 
-export function FeedPost({ post }: FeedPostProps) {
+export function FeedPost({ post, onPress, onPressMotorcycle }: FeedPostProps) {
+  const hasRelatedMotorcycle = Boolean(post.relatedMotorcycleId);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -37,7 +41,21 @@ export function FeedPost({ post }: FeedPostProps) {
         </Pressable>
       </View>
 
-      <Image source={{ uri: post.imageUrl }} style={styles.image} />
+      <View style={styles.imageWrap}>
+        <Pressable onPress={onPress}>
+          <Image source={{ uri: post.imageUrl }} style={styles.image} />
+        </Pressable>
+
+        {hasRelatedMotorcycle ? (
+          <Pressable
+            style={styles.motorcycleFloatingButton}
+            hitSlop={10}
+            onPress={onPressMotorcycle}
+          >
+            <Bike size={22} color={theme.primary} />
+          </Pressable>
+        ) : null}
+      </View>
 
       <View style={styles.content}>
         <View style={styles.actions}>
@@ -56,18 +74,18 @@ export function FeedPost({ post }: FeedPostProps) {
           </Pressable>
         </View>
 
-        <AppText variant="bodyMedium">{post.likesCount} suka</AppText>
+        <Pressable onPress={onPress}>
+          <AppText variant="bodyMedium">{post.likesCount} suka</AppText>
 
-        <AppText style={styles.caption} numberOfLines={2}>
-          <AppText variant="bodyMedium">{post.builderName} </AppText>
-          <AppText tone="secondary">{post.caption}</AppText>
-        </AppText>
+          <AppText style={styles.caption} numberOfLines={2}>
+            <AppText variant="bodyMedium">{post.builderName} </AppText>
+            <AppText tone="secondary">{post.caption}</AppText>
+          </AppText>
 
-        <AppText variant="caption" tone="muted" style={styles.createdAt}>
-          {post.createdAt}
-        </AppText>
-
-        <RelatedMotorChip motorcycleName={post.relatedMotorcycleName} />
+          <AppText variant="caption" tone="muted" style={styles.createdAt}>
+            {post.createdAt}
+          </AppText>
+        </Pressable>
       </View>
     </View>
   );
@@ -102,10 +120,27 @@ const styles = StyleSheet.create({
   builderText: {
     flex: 1,
   },
+  imageWrap: {
+    position: "relative",
+    width: "100%",
+  },
   image: {
     width: "100%",
     aspectRatio: 4 / 5,
     backgroundColor: theme.surfaceSoft,
+  },
+  motorcycleFloatingButton: {
+    position: "absolute",
+    right: spacing.lg,
+    bottom: spacing.lg,
+    width: 46,
+    height: 46,
+    borderRadius: radius.pill,
+    backgroundColor: theme.primarySoft,
+    borderWidth: 1,
+    borderColor: theme.primary,
+    alignItems: "center",
+    justifyContent: "center",
   },
   content: {
     paddingHorizontal: spacing.lg,
@@ -133,6 +168,5 @@ const styles = StyleSheet.create({
   },
   createdAt: {
     marginTop: spacing.xs,
-    marginBottom: spacing.md,
   },
 });
