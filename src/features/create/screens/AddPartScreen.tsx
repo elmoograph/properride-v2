@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import { useState } from "react";
 import { Alert, Pressable, StyleSheet, View } from "react-native";
@@ -16,19 +16,20 @@ import {
   partCategoryOptions,
 } from "@/src/shared/constants/partOptions";
 import { spacing, theme } from "@/src/shared/theme";
-import { MotorcycleSelectCard } from "@/src/features/create/components/MotorcycleSelectCard";
 
 type SelectField = "category" | "brand" | null;
 
 export function AddPartScreen() {
+  const { motorcycleId } = useLocalSearchParams<{ motorcycleId?: string }>();
+
   const [category, setCategory] = useState("");
   const [partBrand, setPartBrand] = useState("");
   const [customBrand, setCustomBrand] = useState("");
   const [partName, setPartName] = useState("");
-  const [selectedMotorcycleId, setSelectedMotorcycleId] = useState<
-    string | null
-  >(null);
   const [activeSelect, setActiveSelect] = useState<SelectField>(null);
+
+  const motorcycle =
+    motorcycles.find((item) => item.id === motorcycleId) ?? motorcycles[0];
 
   const isCustomBrand = partBrand === "custom";
 
@@ -36,8 +37,7 @@ export function AddPartScreen() {
     !category ||
     !partBrand ||
     (isCustomBrand && !customBrand.trim()) ||
-    !partName.trim() ||
-    !selectedMotorcycleId;
+    !partName.trim();
 
   function handleBrandChange(nextBrand: string) {
     setPartBrand(nextBrand);
@@ -54,7 +54,7 @@ export function AddPartScreen() {
 
     Alert.alert(
       "Part tersimpan",
-      "Part berhasil ditambahkan ke motor terkait. Data ini masih sementara sampai Supabase dihubungkan.",
+      `Part berhasil ditambahkan ke ${motorcycle.brand} ${motorcycle.model}. Data ini masih sementara sampai Supabase dihubungkan.`,
       [
         {
           text: "OK",
@@ -74,9 +74,23 @@ export function AddPartScreen() {
         <View style={styles.headerText}>
           <AppText variant="titleLarge">Tambah Part</AppText>
           <AppText tone="secondary" style={styles.subtitle}>
-            Catat part yang terpasang dan hubungkan ke motor di Garage.
+            Catat part untuk motor yang sedang kamu buka.
           </AppText>
         </View>
+      </View>
+
+      <View style={styles.contextCard}>
+        <AppText variant="caption" tone="secondary">
+          Motor terkait
+        </AppText>
+
+        <AppText variant="bodyMedium" style={styles.contextTitle}>
+          {motorcycle.brand} {motorcycle.model}
+        </AppText>
+
+        <AppText variant="caption" tone="muted" style={styles.contextMeta}>
+          {motorcycle.year} · {motorcycle.engineInfo}
+        </AppText>
       </View>
 
       <View style={styles.form}>
@@ -122,29 +136,6 @@ export function AddPartScreen() {
           helperText="Isi nama produk atau seri part."
         />
 
-        <View style={styles.motorcycleSection}>
-          <View style={styles.sectionHeader}>
-            <AppText variant="caption" tone="secondary">
-              Motor terkait
-            </AppText>
-
-            <AppText variant="caption" tone="muted">
-              Wajib
-            </AppText>
-          </View>
-
-          <View style={styles.motorcycleList}>
-            {motorcycles.map((motorcycle) => (
-              <MotorcycleSelectCard
-                key={motorcycle.id}
-                motorcycle={motorcycle}
-                selected={selectedMotorcycleId === motorcycle.id}
-                onPress={() => setSelectedMotorcycleId(motorcycle.id)}
-              />
-            ))}
-          </View>
-        </View>
-
         <AppButton
           disabled={isSubmitDisabled}
           style={styles.submitButton}
@@ -154,8 +145,8 @@ export function AddPartScreen() {
         </AppButton>
 
         <AppText variant="caption" tone="muted" style={styles.note}>
-          Link affiliate tidak ditampilkan di form ini. Field tersebut bisa
-          dikelola nanti sebagai data internal.
+          Timeline motor akan diperbarui otomatis saat part ditambahkan atau
+          dilepas.
         </AppText>
       </View>
     </AppScreen>
@@ -185,24 +176,26 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     maxWidth: 320,
   },
+  contextCard: {
+    marginTop: spacing.section,
+    borderRadius: 24,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    padding: spacing.lg,
+  },
+  contextTitle: {
+    marginTop: spacing.xs,
+  },
+  contextMeta: {
+    marginTop: spacing.xs,
+  },
   form: {
     marginTop: spacing.section,
     gap: spacing.xl,
   },
   brandSection: {
     gap: spacing.md,
-  },
-  motorcycleSection: {
-    gap: spacing.sm,
-  },
-  sectionHeader: {
-    marginLeft: spacing.xs,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  motorcycleList: {
-    gap: spacing.sm,
   },
   submitButton: {
     marginTop: spacing.sm,

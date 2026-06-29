@@ -2,15 +2,18 @@ import { ChevronRight } from "lucide-react-native";
 import { ScrollView, StyleSheet, View } from "react-native";
 
 import { AppScreen, AppText } from "@/src/shared/components";
-import {
-  builderProfile,
-  galleryItems,
-  motorcycles,
-} from "@/src/shared/constants/mockData";
+import { builderProfile, motorcycles } from "@/src/shared/constants/mockData";
 import { spacing, theme } from "@/src/shared/theme";
-import { GarageGalleryStrip } from "@/src/features/garage/components/GarageGalleryStrip";
 import { GarageHeader } from "@/src/features/garage/components/GarageHeader";
 import { GarageMotorcycleCard } from "@/src/features/garage/components/GarageMotorcycleCard";
+import { SetupOverviewCard } from "@/src/features/garage/components/SetupOverviewCard";
+
+const setupOverview = {
+  partsCount: 12,
+  motorcyclesCount: motorcycles.length,
+  categoriesCount: 4,
+  featuredMotorcycleName: "NMAX Atlas",
+};
 
 export function GarageScreen() {
   return (
@@ -44,18 +47,12 @@ export function GarageScreen() {
       </View>
 
       <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <AppText variant="title">Latest Garage Photos</AppText>
-
-          <View style={styles.viewAll}>
-            <AppText variant="caption" tone="accent">
-              Lihat Semua
-            </AppText>
-            <ChevronRight size={16} color={theme.primary} />
-          </View>
-        </View>
-
-        <GarageGalleryStrip items={galleryItems} />
+        <SetupOverviewCard
+          partsCount={setupOverview.partsCount}
+          motorcyclesCount={setupOverview.motorcyclesCount}
+          categoriesCount={setupOverview.categoriesCount}
+          featuredMotorcycleName={setupOverview.featuredMotorcycleName}
+        />
       </View>
     </AppScreen>
   );
