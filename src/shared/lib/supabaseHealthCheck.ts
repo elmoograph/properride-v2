@@ -4,8 +4,14 @@ export async function checkSupabaseConnection() {
   const { error } = await supabase.from("profiles").select("id").limit(1);
 
   if (error) {
-    throw error;
+    return {
+      ok: false,
+      message: error.message,
+    };
   }
 
-  return true;
+  return {
+    ok: true,
+    message: "Supabase connection is healthy.",
+  };
 }

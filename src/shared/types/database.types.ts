@@ -112,3 +112,178 @@ export type CommentRow = {
   created_at: string;
   updated_at: string;
 };
+
+export type Database = {
+  public: {
+    Tables: {
+      profiles: {
+        Row: ProfileRow;
+        Insert: {
+          id: string;
+          full_name: string;
+          username: string;
+          garage_name?: string | null;
+          avatar_url?: string | null;
+          location?: string | null;
+          bio?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<ProfileRow, "id" | "created_at">>;
+        Relationships: [];
+      };
+      motorcycles: {
+        Row: MotorcycleRow;
+        Insert: {
+          id?: string;
+          user_id: string;
+          name?: string | null;
+          brand: string;
+          model: string;
+          year: string;
+          engine_cc?: number | null;
+          engine_info?: string | null;
+          image_url?: string | null;
+          status?: MotorcycleStatus;
+          visibility?: Visibility;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<MotorcycleRow, "id" | "user_id" | "created_at">>;
+        Relationships: [];
+      };
+      motorcycle_parts: {
+        Row: MotorcyclePartRow;
+        Insert: {
+          id?: string;
+          motorcycle_id: string;
+          user_id: string;
+          category: string;
+          brand: string;
+          name: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Omit<
+            MotorcyclePartRow,
+            "id" | "motorcycle_id" | "user_id" | "created_at"
+          >
+        >;
+        Relationships: [];
+      };
+      motorcycle_gallery_items: {
+        Row: MotorcycleGalleryItemRow;
+        Insert: {
+          id?: string;
+          motorcycle_id: string;
+          user_id: string;
+          image_url: string;
+          caption?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<
+          Omit<
+            MotorcycleGalleryItemRow,
+            "id" | "motorcycle_id" | "user_id" | "created_at"
+          >
+        >;
+        Relationships: [];
+      };
+      motorcycle_timeline_items: {
+        Row: MotorcycleTimelineItemRow;
+        Insert: {
+          id?: string;
+          motorcycle_id: string;
+          user_id: string;
+          action: TimelineAction;
+          title: string;
+          description: string;
+          created_at?: string;
+        };
+        Update: Partial<
+          Omit<
+            MotorcycleTimelineItemRow,
+            "id" | "motorcycle_id" | "user_id" | "created_at"
+          >
+        >;
+        Relationships: [];
+      };
+      posts: {
+        Row: PostRow;
+        Insert: {
+          id?: string;
+          user_id: string;
+          motorcycle_id?: string | null;
+          caption: string;
+          visibility?: Visibility;
+          status?: PostStatus;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<PostRow, "id" | "user_id" | "created_at">>;
+        Relationships: [];
+      };
+      post_media: {
+        Row: PostMediaRow;
+        Insert: {
+          id?: string;
+          post_id: string;
+          media_url: string;
+          media_type: PostMediaType;
+          order_index: number;
+          created_at?: string;
+        };
+        Update: Partial<Omit<PostMediaRow, "id" | "post_id" | "created_at">>;
+        Relationships: [];
+      };
+      post_likes: {
+        Row: PostLikeRow;
+        Insert: {
+          id?: string;
+          post_id: string;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
+      post_saves: {
+        Row: PostSaveRow;
+        Insert: {
+          id?: string;
+          post_id: string;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
+      comments: {
+        Row: CommentRow;
+        Insert: {
+          id?: string;
+          post_id: string;
+          user_id: string;
+          body: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Omit<CommentRow, "id" | "post_id" | "user_id" | "created_at">
+        >;
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: {
+      visibility: Visibility;
+      motorcycle_status: MotorcycleStatus;
+      post_status: PostStatus;
+      post_media_type: PostMediaType;
+      timeline_action: TimelineAction;
+    };
+    CompositeTypes: Record<string, never>;
+  };
+};
