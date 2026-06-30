@@ -1,3 +1,9 @@
+import { useAuth } from "@/src/features/auth/hooks/useAuth";
+import { getMotorcycleById } from "@/src/features/garage/repositories/motorcycle.repository";
+import {
+  createMotorcyclePart,
+  createPartAddedTimelineItem,
+} from "@/src/features/garage/repositories/motorcyclePart.repository";
 import { router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import { useEffect, useState } from "react";
@@ -9,7 +15,6 @@ import {
   View,
 } from "react-native";
 
-import { getMotorcycleById } from "@/src/features/garage/repositories/motorcycle.repository";
 import {
   AppButton,
   AppInput,
@@ -28,6 +33,7 @@ type SelectField = "category" | "brand" | null;
 
 export function AddPartScreen() {
   const { motorcycleId } = useLocalSearchParams<{ motorcycleId?: string }>();
+  const { user } = useAuth();
 
   const [motorcycle, setMotorcycle] = useState<MotorcycleRow | null>(null);
   const [loadingMotorcycle, setLoadingMotorcycle] = useState(true);
@@ -38,10 +44,12 @@ export function AddPartScreen() {
   const [customBrand, setCustomBrand] = useState("");
   const [partName, setPartName] = useState("");
   const [activeSelect, setActiveSelect] = useState<SelectField>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const isCustomBrand = partBrand === "custom";
 
   const isSubmitDisabled =
+    submitting ||
     !motorcycle ||
     !category ||
     !partBrand ||
@@ -104,25 +112,58 @@ export function AddPartScreen() {
     }
   }
 
-  function handleSavePart() {
+  async function handleSavePart() {
     if (isSubmitDisabled || !motorcycle) {
       return;
     }
 
-    const finalBrand = isCustomBrand ? customBrand.trim() : partBrand;
+    if (!user) {
+      Alert.alert("Sesi tidak aktif", "Silakan masuk kembali.");
+      router.replace("/(auth)/login");
+      return;
+    }
 
-    Alert.alert(
-      "Part tersimpan",
-      `Part ${partName.trim()} by ${finalBrand} berhasil ditambahkan ke ${
-        motorcycle.brand
-      } ${motorcycle.model}. Data part akan dihubungkan ke Supabase pada step berikutnya.`,
-      [
-        {
-          text: "OK",
-          onPress: () => router.back(),
-        },
-      ],
-    );
+    const finalBrand = isCustomBrand ? customBrand.trim() : partBrand;
+    const cleanPartName = partName.trim();
+
+    try {
+      setSubmitting(true);
+
+      await createMotorcyclePart({
+        motorcycleId: motorcycle.id,
+        userId: user.id,
+        category,
+        brand: finalBrand,
+        name: cleanPartName,
+      });
+
+      await createPartAddedTimelineItem({
+        motorcycleId: motorcycle.id,
+        userId: user.id,
+        title: cleanPartName,
+        description: `${finalBrand} ditambahkan ke setup ${motorcycle.brand} ${motorcycle.model}.`,
+      });
+
+      Alert.alert(
+        "Part tersimpan",
+        `Part berhasil ditambahkan ke ${motorcycle.brand} ${motorcycle.model}.`,
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace(`/motorcycle/${motorcycle.id}`),
+          },
+        ],
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat menyimpan part.";
+
+      Alert.alert("Gagal menyimpan part", message);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (loadingMotorcycle) {
@@ -237,6 +278,7 @@ export function AddPartScreen() {
 
         <AppButton
           disabled={isSubmitDisabled}
+          loading={submitting}
           style={styles.submitButton}
           onPress={handleSavePart}
         >
