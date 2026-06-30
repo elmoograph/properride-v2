@@ -3,6 +3,8 @@ import { ChevronLeft } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import { Alert, Pressable, StyleSheet, TextInput, View } from "react-native";
 
+import { useAuth } from "@/src/features/auth/hooks/useAuth";
+import { createMotorcycle } from "@/src/features/garage/repositories/motorcycle.repository";
 import {
   AppButton,
   AppScreen,
@@ -20,11 +22,14 @@ import { radius, spacing, theme, typography } from "@/src/shared/theme";
 type SelectField = "brand" | "model" | "year" | null;
 
 export function AddMotorcycleScreen() {
+  const { user } = useAuth();
+
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
   const [year, setYear] = useState("");
   const [engineCc, setEngineCc] = useState("");
   const [activeSelect, setActiveSelect] = useState<SelectField>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const modelOptions = useMemo(() => {
     if (!brand) {
@@ -34,7 +39,8 @@ export function AddMotorcycleScreen() {
     return motorcycleModelOptionsByBrand[brand] ?? [];
   }, [brand]);
 
-  const isSubmitDisabled = !brand || !model || !year || !engineCc.trim();
+  const isSubmitDisabled =
+    submitting || !brand || !model || !year || !engineCc.trim();
 
   function handleBrandChange(nextBrand: string) {
     setBrand(nextBrand);
@@ -46,21 +52,49 @@ export function AddMotorcycleScreen() {
     setEngineCc(numericValue);
   }
 
-  function handleSaveMotorcycle() {
+  async function handleSaveMotorcycle() {
     if (isSubmitDisabled) {
       return;
     }
 
-    Alert.alert(
-      "Motor tersimpan",
-      "Motor berhasil ditambahkan ke Garage. Data ini masih sementara sampai Supabase dihubungkan.",
-      [
+    if (!user) {
+      Alert.alert("Sesi tidak aktif", "Silakan masuk kembali.");
+      router.replace("/(auth)/login");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      await createMotorcycle({
+        userId: user.id,
+        brand,
+        model,
+        year,
+        engineCc: Number(engineCc),
+        name: `${brand} ${model}`,
+        engineInfo: `${engineCc} cc`,
+        imageUrl: null,
+        status: "in_progress",
+        visibility: "public",
+      });
+
+      Alert.alert("Motor tersimpan", "Motor berhasil ditambahkan ke Garage.", [
         {
           text: "OK",
-          onPress: () => router.back(),
+          onPress: () => router.replace("/(tabs)/garage"),
         },
-      ],
-    );
+      ]);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat menyimpan motor.";
+
+      Alert.alert("Gagal menyimpan motor", message);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -81,7 +115,7 @@ export function AddMotorcycleScreen() {
       <View style={styles.form}>
         <ImageUploadBox
           title="Tambah foto motor"
-          description="Gunakan foto utama yang paling mewakili motor kamu."
+          description="Upload foto akan dihubungkan setelah storage flow siap."
         />
 
         <View style={styles.row}>
@@ -151,6 +185,7 @@ export function AddMotorcycleScreen() {
 
         <AppButton
           disabled={isSubmitDisabled}
+          loading={submitting}
           style={styles.submitButton}
           onPress={handleSaveMotorcycle}
         >

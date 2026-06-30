@@ -3,26 +3,44 @@ import { ChevronRight } from "lucide-react-native";
 import { Image, Pressable, StyleSheet, View } from "react-native";
 
 import { AppText } from "@/src/shared/components";
-import type { Motorcycle } from "@/src/shared/types/app.types";
 import { radius, spacing, theme } from "@/src/shared/theme";
 
-type GarageMotorcycleCardProps = {
-  motorcycle: Motorcycle;
+export type GarageMotorcycleCardData = {
+  id: string;
+  name: string;
+  brand: string;
+  model: string;
+  year: string;
+  imageUrl: string | null;
+  engineInfo: string | null;
 };
+
+type GarageMotorcycleCardProps = {
+  motorcycle: GarageMotorcycleCardData;
+};
+
+const fallbackMotorcycleImageUrl =
+  "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=800";
 
 export function GarageMotorcycleCard({
   motorcycle,
 }: GarageMotorcycleCardProps) {
+  const displayName =
+    motorcycle.name.trim() || `${motorcycle.brand} ${motorcycle.model}`;
+
   return (
     <Pressable
       onPress={() => router.push(`/motorcycle/${motorcycle.id}`)}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
-      <Image source={{ uri: motorcycle.imageUrl }} style={styles.image} />
+      <Image
+        source={{ uri: motorcycle.imageUrl ?? fallbackMotorcycleImageUrl }}
+        style={styles.image}
+      />
 
       <View style={styles.content}>
         <AppText variant="bodyMedium" numberOfLines={1}>
-          {motorcycle.name}
+          {displayName}
         </AppText>
 
         <AppText variant="caption" tone="secondary" style={styles.year}>
