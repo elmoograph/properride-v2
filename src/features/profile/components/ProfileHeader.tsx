@@ -1,40 +1,61 @@
 import { Image, Pressable, StyleSheet, View } from "react-native";
-import { ChevronRight, Warehouse } from "lucide-react-native";
+import { ChevronRight, User, Warehouse } from "lucide-react-native";
+import { router } from "expo-router";
 
 import { AppText } from "@/src/shared/components";
-import type { BuilderProfile } from "@/src/shared/types/app.types";
 import { radius, spacing, theme } from "@/src/shared/theme";
 
+type ProfileHeaderData = {
+  displayName: string;
+  username: string;
+  garageName: string;
+  avatarUrl: string | null;
+  location: string | null;
+  bio: string | null;
+};
+
 type ProfileHeaderProps = {
-  profile: BuilderProfile;
+  profile: ProfileHeaderData;
 };
 
 export function ProfileHeader({ profile }: ProfileHeaderProps) {
+  const hasAvatar = Boolean(profile.avatarUrl);
+
   return (
     <View style={styles.container}>
       <View style={styles.identity}>
-        <Image source={{ uri: profile.avatarUrl }} style={styles.avatar} />
+        {hasAvatar ? (
+          <Image
+            source={{ uri: profile.avatarUrl ?? "" }}
+            style={styles.avatar}
+          />
+        ) : (
+          <View style={[styles.avatar, styles.avatarFallback]}>
+            <User size={28} color={theme.textMuted} />
+          </View>
+        )}
 
         <View style={styles.identityText}>
           <AppText variant="caption" tone="muted">
-            Builder Name
+            @{profile.username}
           </AppText>
 
           <AppText variant="titleLarge" style={styles.name}>
-            {profile.builderName}
+            {profile.displayName}
           </AppText>
 
           <AppText variant="caption" tone="secondary" style={styles.location}>
-            {profile.location}
+            {profile.location ?? "Lokasi belum diisi"}
           </AppText>
         </View>
       </View>
 
       <AppText tone="secondary" style={styles.bio}>
-        {profile.bio}
+        {profile.bio ?? "Ceritakan sedikit tentang gaya build dan motor kamu."}
       </AppText>
 
       <Pressable
+        onPress={() => router.push("/(tabs)/garage")}
         style={({ pressed }) => [
           styles.garageButton,
           pressed && styles.pressed,
@@ -79,6 +100,10 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surfaceSoft,
     borderWidth: 2,
     borderColor: theme.border,
+  },
+  avatarFallback: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   identityText: {
     flex: 1,
