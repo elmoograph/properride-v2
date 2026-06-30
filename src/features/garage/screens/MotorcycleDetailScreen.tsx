@@ -7,10 +7,12 @@ import {
   Gauge,
   Package,
   Rows3,
+  Trash2,
 } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Pressable,
   StyleSheet,
@@ -23,23 +25,27 @@ import {
   AppScreen,
   AppText,
 } from "@/src/shared/components";
-import {
-  motorcycles,
-  motorcycleGalleryItems,
-  motorcycleParts,
-  motorcycleTimelineItems,
-} from "@/src/shared/constants/mockData";
+import { motorcycleGalleryItems } from "@/src/shared/constants/mockData";
 import { GarageGalleryStrip } from "@/src/features/garage/components/GarageGalleryStrip";
 import { radius, spacing, theme } from "@/src/shared/theme";
-import type { MotorcyclePart } from "@/src/shared/types/app.types";
 import { getMotorcycleById } from "@/src/features/garage/repositories/motorcycle.repository";
-import type { MotorcycleRow } from "@/src/shared/types/database.types";
+import type {
+  MotorcyclePartRow,
+  MotorcycleRow,
+  MotorcycleTimelineItemRow,
+} from "@/src/shared/types/database.types";
+import {
+  createPartRemovedTimelineItem,
+  deleteMotorcyclePartById,
+  listPartsByMotorcycleId,
+  listTimelineItemsByMotorcycleId,
+} from "@/src/features/garage/repositories/motorcyclePart.repository";
 
 type DetailTab = "setup" | "timeline" | "gallery";
 
 type PartCategoryGroup = {
   category: string;
-  parts: MotorcyclePart[];
+  parts: MotorcyclePartRow[];
 };
 
 const detailTabs: Array<{
@@ -68,6 +74,13 @@ export function MotorcycleDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const [parts, setParts] = useState<MotorcyclePartRow[]>([]);
+  const [timelineItems, setTimelineItems] = useState<
+    MotorcycleTimelineItemRow[]
+  >([]);
+
+  const [deletingPartId, setDeletingPartId] = useState<string | null>(null);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -82,10 +95,16 @@ export function MotorcycleDetailScreen() {
         setLoading(true);
         setErrorMessage(null);
 
-        const data = await getMotorcycleById(id);
+        const [motorcycleData, partsData, timelineData] = await Promise.all([
+          getMotorcycleById(id),
+          listPartsByMotorcycleId(id),
+          listTimelineItemsByMotorcycleId(id),
+        ]);
 
         if (isMounted) {
-          setMotorcycle(data);
+          setMotorcycle(motorcycleData);
+          setParts(partsData);
+          setTimelineItems(timelineData);
         }
       } catch (error) {
         const message =
@@ -139,14 +158,6 @@ export function MotorcycleDetailScreen() {
     );
   }
 
-  const parts = motorcycleParts.filter(
-    (part) => part.motorcycleId === motorcycle.id,
-  );
-
-  const timelineItems = motorcycleTimelineItems.filter(
-    (item) => item.motorcycleId === motorcycle.id,
-  );
-
   const gallery = motorcycleGalleryItems.filter(
     (item) => item.motorcycleId === motorcycle.id,
   );
@@ -161,6 +172,58 @@ export function MotorcycleDetailScreen() {
   const motorcycleEngineInfo =
     motorcycle.engine_info ??
     (motorcycle.engine_cc ? `${motorcycle.engine_cc} cc` : "Belum diisi");
+
+  async function handleDeletePart(part: MotorcyclePartRow) {
+    if (!motorcycle) {
+      return;
+    }
+
+    Alert.alert(
+      "Hapus part?",
+      `Part ${part.name} akan dihapus dari setup motor ini.`,
+      [
+        {
+          text: "Batal",
+          style: "cancel",
+        },
+        {
+          text: "Hapus",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setDeletingPartId(part.id);
+
+              await deleteMotorcyclePartById(part.id);
+
+              await createPartRemovedTimelineItem({
+                motorcycleId: motorcycle.id,
+                userId: motorcycle.user_id,
+                title: part.name,
+                description: `${part.brand} dihapus dari setup ${motorcycle.brand} ${motorcycle.model}.`,
+              });
+
+              const [nextParts, nextTimelineItems] = await Promise.all([
+                listPartsByMotorcycleId(motorcycle.id),
+                listTimelineItemsByMotorcycleId(motorcycle.id),
+              ]);
+
+              setParts(nextParts);
+              setTimelineItems(nextTimelineItems);
+            } catch (error) {
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : "Terjadi kesalahan saat menghapus part.";
+
+              Alert.alert("Gagal menghapus part", message);
+            } finally {
+              setDeletingPartId(null);
+            }
+          },
+        },
+      ],
+    );
+  }
 
   return (
     <AppScreen scrollable padded={false}>
@@ -252,7 +315,12 @@ export function MotorcycleDetailScreen() {
 
         <View style={styles.tabContent}>
           {activeTab === "setup" ? (
-            <SetupPartsTab motorcycleId={motorcycle.id} parts={parts} />
+            <SetupPartsTab
+              motorcycleId={motorcycle.id}
+              parts={parts}
+              deletingPartId={deletingPartId}
+              onDeletePart={handleDeletePart}
+            />
           ) : null}
 
           {activeTab === "timeline" ? (
@@ -271,11 +339,15 @@ export function MotorcycleDetailScreen() {
 function SetupPartsTab({
   motorcycleId,
   parts,
+  deletingPartId,
+  onDeletePart,
 }: {
   motorcycleId: string;
-  parts: MotorcyclePart[];
+  parts: MotorcyclePartRow[];
+  deletingPartId: string | null;
+  onDeletePart: (part: MotorcyclePartRow) => void;
 }) {
-  const groupedParts = groupPartsByCategory(parts);
+  const groupedParts = useMemo(() => groupPartsByCategory(parts), [parts]);
   const [expandedCategories, setExpandedCategories] = useState<
     Record<string, boolean>
   >(() =>
@@ -284,6 +356,15 @@ function SetupPartsTab({
       return result;
     }, {}),
   );
+
+  useEffect(() => {
+    setExpandedCategories(
+      groupedParts.reduce<Record<string, boolean>>((result, group, index) => {
+        result[group.category] = index === 0;
+        return result;
+      }, {}),
+    );
+  }, [groupedParts]);
 
   function toggleCategory(category: string) {
     setExpandedCategories((current) => ({
@@ -351,18 +432,43 @@ function SetupPartsTab({
                   <View style={styles.partList}>
                     {group.parts.map((part) => (
                       <View key={part.id} style={styles.partRow}>
-                        <View style={styles.partDot} />
+                        <View style={styles.partThumbnail}>
+                          <Package size={18} color={theme.primary} />
+                        </View>
 
                         <View style={styles.partText}>
-                          <AppText variant="bodyMedium">{part.name}</AppText>
+                          <AppText variant="bodyMedium" numberOfLines={1}>
+                            {part.name}
+                          </AppText>
+
                           <AppText
                             variant="caption"
                             tone="secondary"
                             style={styles.partMeta}
+                            numberOfLines={1}
                           >
-                            By {part.brand}
+                            {part.brand} · {part.category}
                           </AppText>
                         </View>
+
+                        <Pressable
+                          disabled={deletingPartId === part.id}
+                          onPress={() => onDeletePart(part)}
+                          style={({ pressed }) => [
+                            styles.deletePartButton,
+                            pressed && styles.pressed,
+                            deletingPartId === part.id && styles.disabledButton,
+                          ]}
+                        >
+                          {deletingPartId === part.id ? (
+                            <ActivityIndicator
+                              size="small"
+                              color={theme.danger}
+                            />
+                          ) : (
+                            <Trash2 size={16} color={theme.danger} />
+                          )}
+                        </Pressable>
                       </View>
                     ))}
                   </View>
@@ -388,7 +494,7 @@ function SetupPartsTab({
 function TimelineTab({
   timelineItems,
 }: {
-  timelineItems: typeof motorcycleTimelineItems;
+  timelineItems: MotorcycleTimelineItemRow[];
 }) {
   return (
     <View>
@@ -433,7 +539,7 @@ function TimelineTab({
                     </AppText>
 
                     <AppText variant="caption" tone="muted">
-                      {item.date}
+                      {new Date(item.created_at).toLocaleDateString("id-ID")}
                     </AppText>
                   </View>
 
@@ -503,8 +609,8 @@ function GalleryTab({
   );
 }
 
-function groupPartsByCategory(parts: MotorcyclePart[]): PartCategoryGroup[] {
-  const grouped = parts.reduce<Record<string, MotorcyclePart[]>>(
+function groupPartsByCategory(parts: MotorcyclePartRow[]): PartCategoryGroup[] {
+  const grouped = parts.reduce<Record<string, MotorcyclePartRow[]>>(
     (result, part) => {
       if (!result[part.category]) {
         result[part.category] = [];
@@ -659,24 +765,41 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
   },
   partRow: {
-    minHeight: 54,
+    minHeight: 66,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: theme.borderSoft,
   },
-  partDot: {
-    width: 8,
-    height: 8,
-    borderRadius: radius.pill,
-    backgroundColor: theme.primary,
+  partThumbnail: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
+    backgroundColor: theme.primarySoft,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    alignItems: "center",
+    justifyContent: "center",
   },
   partText: {
     flex: 1,
   },
   partMeta: {
     marginTop: spacing.xs,
+  },
+  deletePartButton: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.pill,
+    backgroundColor: "rgba(239, 68, 68, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.28)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   timelineList: {
     gap: spacing.md,
