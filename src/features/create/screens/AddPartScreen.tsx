@@ -1,8 +1,15 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
-import { useState } from "react";
-import { Alert, Pressable, StyleSheet, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
 
+import { getMotorcycleById } from "@/src/features/garage/repositories/motorcycle.repository";
 import {
   AppButton,
   AppInput,
@@ -10,17 +17,21 @@ import {
   AppSelect,
   AppText,
 } from "@/src/shared/components";
-import { motorcycles } from "@/src/shared/constants/mockData";
 import {
   partBrandOptions,
   partCategoryOptions,
 } from "@/src/shared/constants/partOptions";
 import { spacing, theme } from "@/src/shared/theme";
+import type { MotorcycleRow } from "@/src/shared/types/database.types";
 
 type SelectField = "category" | "brand" | null;
 
 export function AddPartScreen() {
   const { motorcycleId } = useLocalSearchParams<{ motorcycleId?: string }>();
+
+  const [motorcycle, setMotorcycle] = useState<MotorcycleRow | null>(null);
+  const [loadingMotorcycle, setLoadingMotorcycle] = useState(true);
+  const [motorcycleError, setMotorcycleError] = useState<string | null>(null);
 
   const [category, setCategory] = useState("");
   const [partBrand, setPartBrand] = useState("");
@@ -28,16 +39,62 @@ export function AddPartScreen() {
   const [partName, setPartName] = useState("");
   const [activeSelect, setActiveSelect] = useState<SelectField>(null);
 
-  const motorcycle =
-    motorcycles.find((item) => item.id === motorcycleId) ?? motorcycles[0];
-
   const isCustomBrand = partBrand === "custom";
 
   const isSubmitDisabled =
+    !motorcycle ||
     !category ||
     !partBrand ||
     (isCustomBrand && !customBrand.trim()) ||
     !partName.trim();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadMotorcycleContext() {
+      if (!motorcycleId) {
+        setLoadingMotorcycle(false);
+        setMotorcycleError(
+          "Motor belum dipilih. Add Part harus memiliki konteks motor.",
+        );
+        return;
+      }
+
+      try {
+        setLoadingMotorcycle(true);
+        setMotorcycleError(null);
+
+        const data = await getMotorcycleById(motorcycleId);
+
+        if (isMounted) {
+          setMotorcycle(data);
+
+          if (!data) {
+            setMotorcycleError("Motor tidak ditemukan atau sudah dihapus.");
+          }
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan saat memuat motor.";
+
+        if (isMounted) {
+          setMotorcycleError(message);
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingMotorcycle(false);
+        }
+      }
+    }
+
+    loadMotorcycleContext();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [motorcycleId]);
 
   function handleBrandChange(nextBrand: string) {
     setPartBrand(nextBrand);
@@ -48,13 +105,17 @@ export function AddPartScreen() {
   }
 
   function handleSavePart() {
-    if (isSubmitDisabled) {
+    if (isSubmitDisabled || !motorcycle) {
       return;
     }
 
+    const finalBrand = isCustomBrand ? customBrand.trim() : partBrand;
+
     Alert.alert(
       "Part tersimpan",
-      `Part berhasil ditambahkan ke ${motorcycle.brand} ${motorcycle.model}. Data ini masih sementara sampai Supabase dihubungkan.`,
+      `Part ${partName.trim()} by ${finalBrand} berhasil ditambahkan ke ${
+        motorcycle.brand
+      } ${motorcycle.model}. Data part akan dihubungkan ke Supabase pada step berikutnya.`,
       [
         {
           text: "OK",
@@ -63,6 +124,44 @@ export function AddPartScreen() {
       ],
     );
   }
+
+  if (loadingMotorcycle) {
+    return (
+      <AppScreen>
+        <View style={styles.centerState}>
+          <ActivityIndicator color={theme.primary} />
+          <AppText tone="secondary" style={styles.centerText}>
+            Memuat motor terkait...
+          </AppText>
+        </View>
+      </AppScreen>
+    );
+  }
+
+  if (motorcycleError || !motorcycle) {
+    return (
+      <AppScreen>
+        <View style={styles.centerState}>
+          <AppText variant="title">Motor belum siap</AppText>
+          <AppText tone="secondary" style={styles.centerText}>
+            {motorcycleError ??
+              "Pilih motor terlebih dahulu sebelum menambahkan part."}
+          </AppText>
+          <AppButton
+            onPress={() =>
+              router.replace("/(create)/select-motorcycle-for-part")
+            }
+          >
+            Pilih Motor
+          </AppButton>
+        </View>
+      </AppScreen>
+    );
+  }
+
+  const motorcycleEngineInfo =
+    motorcycle.engine_info ??
+    (motorcycle.engine_cc ? `${motorcycle.engine_cc} cc` : "Mesin belum diisi");
 
   return (
     <AppScreen scrollable>
@@ -89,7 +188,7 @@ export function AddPartScreen() {
         </AppText>
 
         <AppText variant="caption" tone="muted" style={styles.contextMeta}>
-          {motorcycle.year} · {motorcycle.engineInfo}
+          {motorcycle.year} · {motorcycleEngineInfo}
         </AppText>
       </View>
 
@@ -203,5 +302,15 @@ const styles = StyleSheet.create({
   note: {
     textAlign: "center",
     paddingHorizontal: spacing.md,
+  },
+  centerState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.md,
+  },
+  centerText: {
+    maxWidth: 280,
+    textAlign: "center",
   },
 });

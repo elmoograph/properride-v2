@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { ChevronRight } from "lucide-react-native";
+import { Bike, ChevronRight } from "lucide-react-native";
 import { Image, Pressable, StyleSheet, View } from "react-native";
 
 import { AppText } from "@/src/shared/components";
@@ -19,24 +19,31 @@ type GarageMotorcycleCardProps = {
   motorcycle: GarageMotorcycleCardData;
 };
 
-const fallbackMotorcycleImageUrl =
-  "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=800";
-
 export function GarageMotorcycleCard({
   motorcycle,
 }: GarageMotorcycleCardProps) {
   const displayName =
     motorcycle.name.trim() || `${motorcycle.brand} ${motorcycle.model}`;
 
+  const hasImage = Boolean(motorcycle.imageUrl);
+
   return (
     <Pressable
       onPress={() => router.push(`/motorcycle/${motorcycle.id}`)}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
-      <Image
-        source={{ uri: motorcycle.imageUrl ?? fallbackMotorcycleImageUrl }}
-        style={styles.image}
-      />
+      {hasImage ? (
+        <Image
+          source={{ uri: motorcycle.imageUrl ?? "" }}
+          style={styles.image}
+        />
+      ) : (
+        <View style={[styles.image, styles.imagePlaceholder]}>
+          <View style={styles.placeholderIcon}>
+            <Bike size={28} color={theme.primary} />
+          </View>
+        </View>
+      )}
 
       <View style={styles.content}>
         <AppText variant="bodyMedium" numberOfLines={1}>
@@ -71,6 +78,18 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 122,
     backgroundColor: theme.surfaceSoft,
+  },
+  imagePlaceholder: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  placeholderIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.pill,
+    backgroundColor: theme.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
   },
   content: {
     padding: spacing.md,

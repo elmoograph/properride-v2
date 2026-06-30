@@ -8,8 +8,14 @@ import {
   Package,
   Rows3,
 } from "lucide-react-native";
-import { useState } from "react";
-import { Image, Pressable, StyleSheet, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
 
 import {
   AppButton,
@@ -26,6 +32,8 @@ import {
 import { GarageGalleryStrip } from "@/src/features/garage/components/GarageGalleryStrip";
 import { radius, spacing, theme } from "@/src/shared/theme";
 import type { MotorcyclePart } from "@/src/shared/types/app.types";
+import { getMotorcycleById } from "@/src/features/garage/repositories/motorcycle.repository";
+import type { MotorcycleRow } from "@/src/shared/types/database.types";
 
 type DetailTab = "setup" | "timeline" | "gallery";
 
@@ -56,8 +64,80 @@ export function MotorcycleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<DetailTab>("setup");
 
-  const motorcycle =
-    motorcycles.find((item) => item.id === id) ?? motorcycles[0];
+  const [motorcycle, setMotorcycle] = useState<MotorcycleRow | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadMotorcycle() {
+      if (!id) {
+        setLoading(false);
+        setErrorMessage("Motor tidak ditemukan.");
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setErrorMessage(null);
+
+        const data = await getMotorcycleById(id);
+
+        if (isMounted) {
+          setMotorcycle(data);
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan saat memuat detail motor.";
+
+        if (isMounted) {
+          setErrorMessage(message);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadMotorcycle();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <AppScreen>
+        <View style={styles.centerState}>
+          <ActivityIndicator color={theme.primary} />
+          <AppText tone="secondary" style={styles.centerText}>
+            Memuat detail motor...
+          </AppText>
+        </View>
+      </AppScreen>
+    );
+  }
+
+  if (errorMessage || !motorcycle) {
+    return (
+      <AppScreen>
+        <View style={styles.centerState}>
+          <AppText variant="title">Motor tidak ditemukan</AppText>
+          <AppText tone="secondary" style={styles.centerText}>
+            {errorMessage ?? "Data motor belum tersedia atau sudah dihapus."}
+          </AppText>
+          <AppButton onPress={() => router.replace("/(tabs)/garage")}>
+            Kembali ke Garage
+          </AppButton>
+        </View>
+      </AppScreen>
+    );
+  }
 
   const parts = motorcycleParts.filter(
     (part) => part.motorcycleId === motorcycle.id,
@@ -71,10 +151,21 @@ export function MotorcycleDetailScreen() {
     (item) => item.motorcycleId === motorcycle.id,
   );
 
+  const motorcycleImageUrl =
+    motorcycle.image_url ??
+    "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=1200";
+
+  const motorcycleTitle =
+    motorcycle.name || `${motorcycle.brand} ${motorcycle.model}`;
+
+  const motorcycleEngineInfo =
+    motorcycle.engine_info ??
+    (motorcycle.engine_cc ? `${motorcycle.engine_cc} cc` : "Belum diisi");
+
   return (
     <AppScreen scrollable padded={false}>
       <View style={styles.heroWrap}>
-        <Image source={{ uri: motorcycle.imageUrl }} style={styles.heroImage} />
+        <Image source={{ uri: motorcycleImageUrl }} style={styles.heroImage} />
 
         <View style={styles.heroOverlay} />
 
@@ -96,7 +187,7 @@ export function MotorcycleDetailScreen() {
           </AppText>
 
           <AppText variant="titleLarge" style={styles.title}>
-            {motorcycle.brand} {motorcycle.model}
+            {motorcycleTitle}
           </AppText>
         </View>
 
@@ -110,7 +201,7 @@ export function MotorcycleDetailScreen() {
             >
               Mesin
             </AppText>
-            <AppText variant="bodyMedium">{motorcycle.engineInfo}</AppText>
+            <AppText variant="bodyMedium">{motorcycleEngineInfo}</AppText>
           </AppCard>
 
           <AppCard style={styles.statCard}>
@@ -638,5 +729,15 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.82,
+  },
+  centerState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.md,
+  },
+  centerText: {
+    maxWidth: 280,
+    textAlign: "center",
   },
 });

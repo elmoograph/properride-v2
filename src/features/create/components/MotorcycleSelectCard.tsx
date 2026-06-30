@@ -1,12 +1,21 @@
-import { Check, ChevronRight } from "lucide-react-native";
+import { Bike, Check, ChevronRight } from "lucide-react-native";
 import { Image, Pressable, StyleSheet, View } from "react-native";
 
 import { AppText } from "@/src/shared/components";
-import type { Motorcycle } from "@/src/shared/types/app.types";
 import { radius, spacing, theme } from "@/src/shared/theme";
 
+export type MotorcycleSelectCardData = {
+  id: string;
+  name: string;
+  brand: string;
+  model: string;
+  year: string;
+  imageUrl: string | null;
+  engineInfo: string | null;
+};
+
 type MotorcycleSelectCardProps = {
-  motorcycle: Motorcycle;
+  motorcycle: MotorcycleSelectCardData;
   selected?: boolean;
   onPress?: () => void;
 };
@@ -16,6 +25,11 @@ export function MotorcycleSelectCard({
   selected = false,
   onPress,
 }: MotorcycleSelectCardProps) {
+  const displayName =
+    motorcycle.name.trim() || `${motorcycle.brand} ${motorcycle.model}`;
+
+  const hasImage = Boolean(motorcycle.imageUrl);
+
   return (
     <Pressable
       onPress={onPress}
@@ -25,11 +39,20 @@ export function MotorcycleSelectCard({
         pressed && styles.pressed,
       ]}
     >
-      <Image source={{ uri: motorcycle.imageUrl }} style={styles.image} />
+      {hasImage ? (
+        <Image
+          source={{ uri: motorcycle.imageUrl ?? "" }}
+          style={styles.image}
+        />
+      ) : (
+        <View style={[styles.image, styles.imagePlaceholder]}>
+          <Bike size={24} color={theme.primary} />
+        </View>
+      )}
 
       <View style={styles.content}>
         <AppText variant="bodyMedium" numberOfLines={1}>
-          {motorcycle.name}
+          {displayName}
         </AppText>
 
         <AppText variant="caption" tone="secondary" style={styles.meta}>
@@ -69,6 +92,12 @@ const styles = StyleSheet.create({
     height: 58,
     borderRadius: radius.md,
     backgroundColor: theme.surfaceSoft,
+  },
+  imagePlaceholder: {
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
   },
   content: {
     flex: 1,

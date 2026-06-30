@@ -1,8 +1,16 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { Alert, BackHandler, Pressable, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  BackHandler,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
 
+import { getMotorcycleById } from "@/src/features/garage/repositories/motorcycle.repository";
 import {
   AppButton,
   AppCard,
@@ -11,18 +19,70 @@ import {
   AppText,
   ImageUploadBox,
 } from "@/src/shared/components";
-import { motorcycles } from "@/src/shared/constants/mockData";
 import { radius, spacing, theme } from "@/src/shared/theme";
+import type { MotorcycleRow } from "@/src/shared/types/database.types";
 
 type GalleryStep = "gallery" | "share" | "post";
 
 export function AddGalleryScreen() {
   const { motorcycleId } = useLocalSearchParams<{ motorcycleId?: string }>();
 
+  const [motorcycle, setMotorcycle] = useState<MotorcycleRow | null>(null);
+  const [loadingMotorcycle, setLoadingMotorcycle] = useState(true);
+  const [motorcycleError, setMotorcycleError] = useState<string | null>(null);
+
   const [step, setStep] = useState<GalleryStep>("gallery");
   const [hasMedia, setHasMedia] = useState(false);
   const [galleryCaption, setGalleryCaption] = useState("");
   const [postCaption, setPostCaption] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadMotorcycleContext() {
+      if (!motorcycleId) {
+        setLoadingMotorcycle(false);
+        setMotorcycleError(
+          "Motor belum dipilih. Add Gallery harus memiliki konteks motor.",
+        );
+        return;
+      }
+
+      try {
+        setLoadingMotorcycle(true);
+        setMotorcycleError(null);
+
+        const data = await getMotorcycleById(motorcycleId);
+
+        if (isMounted) {
+          setMotorcycle(data);
+
+          if (!data) {
+            setMotorcycleError("Motor tidak ditemukan atau sudah dihapus.");
+          }
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan saat memuat motor.";
+
+        if (isMounted) {
+          setMotorcycleError(message);
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingMotorcycle(false);
+        }
+      }
+    }
+
+    loadMotorcycleContext();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [motorcycleId]);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener(
@@ -45,9 +105,6 @@ export function AddGalleryScreen() {
     return () => subscription.remove();
   }, [step]);
 
-  const motorcycle =
-    motorcycles.find((item) => item.id === motorcycleId) ?? motorcycles[0];
-
   const isGalleryStep = step === "gallery";
   const isShareStep = step === "share";
   const isPostStep = step === "post";
@@ -59,7 +116,9 @@ export function AddGalleryScreen() {
       : "Simpan Gallery + Post";
 
   const isSubmitDisabled =
-    (isGalleryStep && !hasMedia) || (isPostStep && !postCaption.trim());
+    !motorcycle ||
+    (isGalleryStep && !hasMedia) ||
+    (isPostStep && !postCaption.trim());
 
   function handleBack() {
     if (isPostStep) {
@@ -76,7 +135,7 @@ export function AddGalleryScreen() {
   }
 
   function handlePrimaryAction() {
-    if (isSubmitDisabled) {
+    if (isSubmitDisabled || !motorcycle) {
       return;
     }
 
@@ -94,9 +153,13 @@ export function AddGalleryScreen() {
   }
 
   function saveGalleryOnly() {
+    if (!motorcycle) {
+      return;
+    }
+
     Alert.alert(
       "Gallery tersimpan",
-      `Foto berhasil ditambahkan ke Gallery ${motorcycle.brand} ${motorcycle.model}. Data ini masih sementara sampai Supabase dihubungkan.`,
+      `Foto berhasil ditambahkan ke Gallery ${motorcycle.brand} ${motorcycle.model}. Data gallery akan dihubungkan ke Supabase pada step berikutnya.`,
       [
         {
           text: "OK",
@@ -107,9 +170,13 @@ export function AddGalleryScreen() {
   }
 
   function saveGalleryAndPost() {
+    if (!motorcycle) {
+      return;
+    }
+
     Alert.alert(
       "Gallery dan Post tersimpan",
-      `Foto berhasil ditambahkan ke Gallery ${motorcycle.brand} ${motorcycle.model} dan dibuat sebagai Post di Feed. Data ini masih sementara sampai Supabase dihubungkan.`,
+      `Foto berhasil ditambahkan ke Gallery ${motorcycle.brand} ${motorcycle.model} dan dibuat sebagai Post di Feed. Data gallery dan post akan dihubungkan ke Supabase pada step berikutnya.`,
       [
         {
           text: "OK",
@@ -118,6 +185,45 @@ export function AddGalleryScreen() {
       ],
     );
   }
+
+  if (loadingMotorcycle) {
+    return (
+      <AppScreen>
+        <View style={styles.centerState}>
+          <ActivityIndicator color={theme.primary} />
+          <AppText tone="secondary" style={styles.centerText}>
+            Memuat motor terkait...
+          </AppText>
+        </View>
+      </AppScreen>
+    );
+  }
+
+  if (motorcycleError || !motorcycle) {
+    return (
+      <AppScreen>
+        <View style={styles.centerState}>
+          <AppText variant="title">Motor belum siap</AppText>
+          <AppText tone="secondary" style={styles.centerText}>
+            {motorcycleError ??
+              "Pilih motor terlebih dahulu sebelum menambahkan gallery."}
+          </AppText>
+          <AppButton
+            onPress={() =>
+              router.replace("/(create)/select-motorcycle-for-gallery")
+            }
+          >
+            Pilih Motor
+          </AppButton>
+        </View>
+      </AppScreen>
+    );
+  }
+
+  const motorcycleName = `${motorcycle.brand} ${motorcycle.model}`;
+  const motorcycleEngineInfo =
+    motorcycle.engine_info ??
+    (motorcycle.engine_cc ? `${motorcycle.engine_cc} cc` : "Mesin belum diisi");
 
   return (
     <AppScreen scrollable>
@@ -141,11 +247,11 @@ export function AddGalleryScreen() {
         </AppText>
 
         <AppText variant="bodyMedium" style={styles.contextTitle}>
-          {motorcycle.brand} {motorcycle.model}
+          {motorcycleName}
         </AppText>
 
         <AppText variant="caption" tone="muted" style={styles.contextMeta}>
-          {motorcycle.year} · {motorcycle.engineInfo}
+          {motorcycle.year} · {motorcycleEngineInfo}
         </AppText>
       </AppCard>
 
@@ -171,7 +277,7 @@ export function AddGalleryScreen() {
 
         {isShareStep ? (
           <ShareDecisionStep
-            motorcycleName={`${motorcycle.brand} ${motorcycle.model}`}
+            motorcycleName={motorcycleName}
             onShareToFeed={() => setStep("post")}
           />
         ) : null}
@@ -488,6 +594,16 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     textAlign: "center",
     paddingHorizontal: spacing.md,
+  },
+  centerState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.md,
+  },
+  centerText: {
+    maxWidth: 280,
+    textAlign: "center",
   },
   pressed: {
     opacity: 0.82,
