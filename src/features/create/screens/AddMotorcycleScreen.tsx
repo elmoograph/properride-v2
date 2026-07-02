@@ -1,3 +1,4 @@
+import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import { useMemo, useState } from "react";
@@ -18,6 +19,10 @@ import {
   motorcycleModelOptionsByBrand,
   motorcycleYearOptions,
 } from "@/src/shared/constants/motorcycleOptions";
+import {
+  createStorageImagePath,
+  uploadImageToStorage,
+} from "@/src/shared/lib/storage";
 import { radius, spacing, theme, typography } from "@/src/shared/theme";
 
 type SelectField = "brand" | "model" | "year" | null;
@@ -29,6 +34,7 @@ export function AddMotorcycleScreen() {
   const [model, setModel] = useState("");
   const [year, setYear] = useState("");
   const [engineCc, setEngineCc] = useState("");
+  const [coverImageUri, setCoverImageUri] = useState<string | null>(null);
   const [activeSelect, setActiveSelect] = useState<SelectField>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -53,6 +59,54 @@ export function AddMotorcycleScreen() {
     setEngineCc(numericValue);
   }
 
+  async function handlePickCoverImage() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert(
+        "Izin diperlukan",
+        "Izinkan akses galeri untuk memilih foto motor.",
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.88,
+    });
+
+    if (result.canceled) {
+      return;
+    }
+
+    const imageUri = result.assets[0]?.uri;
+
+    if (!imageUri) {
+      Alert.alert("Foto tidak valid", "Pilih foto lain untuk cover motor.");
+      return;
+    }
+
+    setCoverImageUri(imageUri);
+  }
+
+  async function uploadCoverImageIfSelected() {
+    if (!user || !coverImageUri) {
+      return null;
+    }
+
+    const path = createStorageImagePath({
+      userId: user.id,
+      folder: "motorcycles",
+    });
+
+    return uploadImageToStorage({
+      uri: coverImageUri,
+      path,
+    });
+  }
+
   async function handleSaveMotorcycle() {
     if (isSubmitDisabled) {
       return;
@@ -67,6 +121,7 @@ export function AddMotorcycleScreen() {
     try {
       setSubmitting(true);
       await ensureProfileForUser(user);
+      const uploadedImageUrl = await uploadCoverImageIfSelected();
       await createMotorcycle({
         userId: user.id,
         brand,
@@ -75,7 +130,7 @@ export function AddMotorcycleScreen() {
         engineCc: Number(engineCc),
         name: `${brand} ${model}`,
         engineInfo: `${engineCc} cc`,
-        imageUrl: null,
+        imageUrl: uploadedImageUrl,
         status: "in_progress",
         visibility: "public",
       });
@@ -115,8 +170,16 @@ export function AddMotorcycleScreen() {
 
       <View style={styles.form}>
         <ImageUploadBox
-          title="Tambah foto motor"
-          description="Upload foto akan dihubungkan setelah storage flow siap."
+          title={
+            coverImageUri ? "Foto motor sudah dipilih" : "Tambah foto motor"
+          }
+          description={
+            coverImageUri
+              ? "Foto ini akan menjadi cover motor di Garage."
+              : "Pilih foto terbaik untuk cover motor kamu."
+          }
+          imageUri={coverImageUri}
+          onPress={handlePickCoverImage}
         />
 
         <View style={styles.row}>
