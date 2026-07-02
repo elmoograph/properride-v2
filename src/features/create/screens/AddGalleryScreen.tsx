@@ -13,6 +13,7 @@ import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { createMotorcycleGalleryItem } from "@/src/features/garage/repositories/motorcycleGallery.repository";
 
 import { getMotorcycleById } from "@/src/features/garage/repositories/motorcycle.repository";
+import { createPostWithPlaceholderMedia } from "@/src/features/feed/repositories/post.repository";
 import {
   AppButton,
   AppCard,
@@ -25,6 +26,7 @@ import { radius, spacing, theme } from "@/src/shared/theme";
 import type { MotorcycleRow } from "@/src/shared/types/database.types";
 
 type GalleryStep = "gallery" | "share" | "post";
+type ShareChoice = "gallery_only" | "share_to_feed";
 const TEMP_GALLERY_IMAGE_URL =
   "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=1200";
 
@@ -40,6 +42,7 @@ export function AddGalleryScreen() {
   const [hasMedia, setHasMedia] = useState(false);
   const [galleryCaption, setGalleryCaption] = useState("");
   const [postCaption, setPostCaption] = useState("");
+  const [shareChoice, setShareChoice] = useState<ShareChoice | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -100,6 +103,7 @@ export function AddGalleryScreen() {
         }
 
         if (step === "share") {
+          setShareChoice(null);
           setStep("gallery");
           return true;
         }
@@ -118,13 +122,14 @@ export function AddGalleryScreen() {
   const primaryButtonLabel = isGalleryStep
     ? "Lanjut"
     : isShareStep
-      ? "Simpan Gallery Saja"
+      ? "Confirm"
       : "Simpan Gallery + Post";
 
   const isSubmitDisabled =
     submitting ||
     !motorcycle ||
     (isGalleryStep && !hasMedia) ||
+    (isShareStep && !shareChoice) ||
     (isPostStep && !postCaption.trim());
 
   function handleBack() {
@@ -134,6 +139,7 @@ export function AddGalleryScreen() {
     }
 
     if (isShareStep) {
+      setShareChoice(null);
       setStep("gallery");
       return;
     }
@@ -152,8 +158,15 @@ export function AddGalleryScreen() {
     }
 
     if (isShareStep) {
-      saveGalleryOnly();
-      return;
+      if (shareChoice === "gallery_only") {
+        saveGalleryOnly();
+        return;
+      }
+
+      if (shareChoice === "share_to_feed") {
+        setStep("post");
+        return;
+      }
     }
 
     saveGalleryAndPost();
@@ -186,7 +199,7 @@ export function AddGalleryScreen() {
         [
           {
             text: "OK",
-            onPress: () => router.replace(`/motorcycle/${motorcycle.id}`),
+            onPress: () => router.back(),
           },
         ],
       );
@@ -223,13 +236,21 @@ export function AddGalleryScreen() {
         caption: galleryCaption.trim() || null,
       });
 
+      await createPostWithPlaceholderMedia({
+        userId: user.id,
+        motorcycleId: motorcycle.id,
+        caption: postCaption.trim(),
+        visibility: "public",
+        mediaCount: 1,
+      });
+
       Alert.alert(
-        "Gallery tersimpan",
-        "Foto sudah masuk ke Gallery. Pembuatan Post Feed akan dihubungkan pada phase berikutnya.",
+        "Gallery dan Post tersimpan",
+        `Foto berhasil ditambahkan ke Gallery ${motorcycle.brand} ${motorcycle.model} dan dibagikan ke Feed.`,
         [
           {
             text: "OK",
-            onPress: () => router.replace(`/motorcycle/${motorcycle.id}`),
+            onPress: () => router.back(),
           },
         ],
       );
@@ -237,9 +258,9 @@ export function AddGalleryScreen() {
       const message =
         error instanceof Error
           ? error.message
-          : "Terjadi kesalahan saat menyimpan gallery.";
+          : "Terjadi kesalahan saat menyimpan gallery dan post.";
 
-      Alert.alert("Gagal menyimpan gallery", message);
+      Alert.alert("Gagal menyimpan", message);
     } finally {
       setSubmitting(false);
     }
@@ -337,7 +358,8 @@ export function AddGalleryScreen() {
         {isShareStep ? (
           <ShareDecisionStep
             motorcycleName={motorcycleName}
-            onShareToFeed={() => setStep("post")}
+            selectedChoice={shareChoice}
+            onSelectChoice={setShareChoice}
           />
         ) : null}
 
@@ -422,11 +444,16 @@ function GalleryContentStep({
 
 function ShareDecisionStep({
   motorcycleName,
-  onShareToFeed,
+  selectedChoice,
+  onSelectChoice,
 }: {
   motorcycleName: string;
-  onShareToFeed: () => void;
+  selectedChoice: ShareChoice | null;
+  onSelectChoice: (choice: ShareChoice) => void;
 }) {
+  const isGalleryOnlySelected = selectedChoice === "gallery_only";
+  const isShareToFeedSelected = selectedChoice === "share_to_feed";
+
   return (
     <View style={styles.stepContent}>
       <View style={styles.sectionHeader}>
@@ -437,38 +464,67 @@ function ShareDecisionStep({
             tone="secondary"
             style={styles.sectionSubtitle}
           >
-            Gallery sudah siap disimpan. Kamu bisa sekalian membuat Post dari
-            foto ini.
+            Pilih tempat publikasi foto ini, lalu tekan Confirm.
           </AppText>
         </View>
       </View>
 
-      <AppCard style={styles.shareOptionCard}>
-        <AppText variant="bodyMedium">Simpan sebagai Gallery saja</AppText>
-        <AppText
-          variant="caption"
-          tone="secondary"
-          style={styles.shareOptionText}
-        >
-          Foto hanya muncul di Motorcycle Detail &gt; Gallery.
-        </AppText>
-      </AppCard>
-
       <Pressable
-        onPress={onShareToFeed}
+        onPress={() => onSelectChoice("gallery_only")}
         style={({ pressed }) => [
-          styles.shareToFeedCard,
+          styles.shareOptionCard,
+          isGalleryOnlySelected && styles.shareOptionCardSelected,
           pressed && styles.pressed,
         ]}
       >
-        <AppText variant="bodyMedium">Bagikan juga ke Feed</AppText>
-        <AppText
-          variant="caption"
-          tone="secondary"
-          style={styles.shareOptionText}
-        >
-          Buat Post baru yang terhubung ke {motorcycleName}.
-        </AppText>
+        <View style={styles.shareOptionTopRow}>
+          <View style={styles.shareOptionTextWrap}>
+            <AppText variant="bodyMedium">Simpan sebagai Gallery saja</AppText>
+            <AppText
+              variant="caption"
+              tone="secondary"
+              style={styles.shareOptionText}
+            >
+              Foto hanya muncul di Motorcycle Detail &gt; Gallery.
+            </AppText>
+          </View>
+
+          <View
+            style={[
+              styles.choiceIndicator,
+              isGalleryOnlySelected && styles.choiceIndicatorSelected,
+            ]}
+          />
+        </View>
+      </Pressable>
+
+      <Pressable
+        onPress={() => onSelectChoice("share_to_feed")}
+        style={({ pressed }) => [
+          styles.shareOptionCard,
+          isShareToFeedSelected && styles.shareOptionCardSelected,
+          pressed && styles.pressed,
+        ]}
+      >
+        <View style={styles.shareOptionTopRow}>
+          <View style={styles.shareOptionTextWrap}>
+            <AppText variant="bodyMedium">Bagikan juga ke Feed</AppText>
+            <AppText
+              variant="caption"
+              tone="secondary"
+              style={styles.shareOptionText}
+            >
+              Buat Post baru yang terhubung ke {motorcycleName}.
+            </AppText>
+          </View>
+
+          <View
+            style={[
+              styles.choiceIndicator,
+              isShareToFeedSelected && styles.choiceIndicatorSelected,
+            ]}
+          />
+        </View>
       </Pressable>
     </View>
   );
@@ -624,17 +680,38 @@ const styles = StyleSheet.create({
     maxWidth: 270,
   },
   shareOptionCard: {
-    alignItems: "flex-start",
-  },
-  shareToFeedCard: {
     borderRadius: radius.xl,
-    backgroundColor: theme.primarySoft,
+    backgroundColor: theme.surface,
     borderWidth: 1,
-    borderColor: theme.primary,
+    borderColor: theme.borderSoft,
     padding: spacing.lg,
+  },
+  shareOptionCardSelected: {
+    backgroundColor: theme.primarySoft,
+    borderColor: theme.primary,
+  },
+  shareOptionTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  shareOptionTextWrap: {
+    flex: 1,
   },
   shareOptionText: {
     marginTop: spacing.xs,
+  },
+  choiceIndicator: {
+    width: 18,
+    height: 18,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.surfaceSoft,
+  },
+  choiceIndicatorSelected: {
+    borderColor: theme.primary,
+    backgroundColor: theme.primary,
   },
   feedPreviewCard: {
     backgroundColor: theme.surfaceSoft,

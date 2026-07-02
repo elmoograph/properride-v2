@@ -1,6 +1,6 @@
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Search, Bell } from "lucide-react-native";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 
 import type { FeedCategory } from "@/src/shared/constants/feedCategories";
@@ -18,41 +18,43 @@ export function FeedScreen() {
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [postError, setPostError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
 
-    async function loadPosts() {
-      try {
-        setLoadingPosts(true);
-        setPostError(null);
+      async function loadPosts() {
+        try {
+          setLoadingPosts(true);
+          setPostError(null);
 
-        const data = await listPublicFeedPosts();
+          const data = await listPublicFeedPosts();
 
-        if (isMounted) {
-          setPosts(data);
-        }
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Terjadi kesalahan saat memuat Feed.";
+          if (isActive) {
+            setPosts(data);
+          }
+        } catch (error) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "Terjadi kesalahan saat memuat Feed.";
 
-        if (isMounted) {
-          setPostError(message);
-        }
-      } finally {
-        if (isMounted) {
-          setLoadingPosts(false);
+          if (isActive) {
+            setPostError(message);
+          }
+        } finally {
+          if (isActive) {
+            setLoadingPosts(false);
+          }
         }
       }
-    }
 
-    loadPosts();
+      loadPosts();
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
 
   const filteredPosts = useMemo(() => {
     if (selectedCategory === "All") {

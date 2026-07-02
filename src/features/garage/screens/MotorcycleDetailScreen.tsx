@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import {
   ChevronDown,
   ChevronLeft,
@@ -9,7 +9,7 @@ import {
   Rows3,
   Archive,
 } from "lucide-react-native";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -84,56 +84,58 @@ export function MotorcycleDetailScreen() {
   );
   const [archivingPartId, setArchivingPartId] = useState<string | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
 
-    async function loadMotorcycle() {
-      if (!id) {
-        setLoading(false);
-        setErrorMessage("Motor tidak ditemukan.");
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setErrorMessage(null);
-
-        const [motorcycleData, partsData, timelineData, galleryData] =
-          await Promise.all([
-            getMotorcycleById(id),
-            listPartsByMotorcycleId(id),
-            listTimelineItemsByMotorcycleId(id),
-            listGalleryItemsByMotorcycleId(id),
-          ]);
-
-        if (isMounted) {
-          setMotorcycle(motorcycleData);
-          setParts(partsData);
-          setTimelineItems(timelineData);
-          setGalleryItems(galleryData);
-        }
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Terjadi kesalahan saat memuat detail motor.";
-
-        if (isMounted) {
-          setErrorMessage(message);
-        }
-      } finally {
-        if (isMounted) {
+      async function loadMotorcycle() {
+        if (!id) {
           setLoading(false);
+          setErrorMessage("Motor tidak ditemukan.");
+          return;
+        }
+
+        try {
+          setLoading(true);
+          setErrorMessage(null);
+
+          const [motorcycleData, partsData, timelineData, galleryData] =
+            await Promise.all([
+              getMotorcycleById(id),
+              listPartsByMotorcycleId(id),
+              listTimelineItemsByMotorcycleId(id),
+              listGalleryItemsByMotorcycleId(id),
+            ]);
+
+          if (isActive) {
+            setMotorcycle(motorcycleData);
+            setParts(partsData);
+            setTimelineItems(timelineData);
+            setGalleryItems(galleryData);
+          }
+        } catch (error) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "Terjadi kesalahan saat memuat detail motor.";
+
+          if (isActive) {
+            setErrorMessage(message);
+          }
+        } finally {
+          if (isActive) {
+            setLoading(false);
+          }
         }
       }
-    }
 
-    loadMotorcycle();
+      loadMotorcycle();
 
-    return () => {
-      isMounted = false;
-    };
-  }, [id]);
+      return () => {
+        isActive = false;
+      };
+    }, [id]),
+  );
 
   if (loading) {
     return (

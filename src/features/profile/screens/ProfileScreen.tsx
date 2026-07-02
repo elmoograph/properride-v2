@@ -6,8 +6,8 @@ import {
   PenLine,
   Settings,
 } from "lucide-react-native";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
 
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
@@ -30,50 +30,52 @@ export function ProfileScreen() {
   const [signingOut, setSigningOut] = useState(false);
   const [myPosts, setMyPosts] = useState<FeedPost[]>([]);
 
-  useEffect(() => {
-    let isMounted = true;
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
 
-    async function loadProfile() {
-      if (!user) {
-        setLoadingProfile(false);
-        return;
-      }
-
-      try {
-        setLoadingProfile(true);
-        setProfileError(null);
-
-        const [userProfile, posts] = await Promise.all([
-          ensureProfileForUser(user),
-          listPostsByUserId(user.id),
-        ]);
-
-        if (isMounted) {
-          setProfile(userProfile);
-          setMyPosts(posts);
-        }
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Terjadi kesalahan saat memuat profil.";
-
-        if (isMounted) {
-          setProfileError(message);
-        }
-      } finally {
-        if (isMounted) {
+      async function loadProfile() {
+        if (!user) {
           setLoadingProfile(false);
+          return;
+        }
+
+        try {
+          setLoadingProfile(true);
+          setProfileError(null);
+
+          const [userProfile, posts] = await Promise.all([
+            ensureProfileForUser(user),
+            listPostsByUserId(user.id),
+          ]);
+
+          if (isActive) {
+            setProfile(userProfile);
+            setMyPosts(posts);
+          }
+        } catch (error) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "Terjadi kesalahan saat memuat profil.";
+
+          if (isActive) {
+            setProfileError(message);
+          }
+        } finally {
+          if (isActive) {
+            setLoadingProfile(false);
+          }
         }
       }
-    }
 
-    loadProfile();
+      loadProfile();
 
-    return () => {
-      isMounted = false;
-    };
-  }, [user]);
+      return () => {
+        isActive = false;
+      };
+    }, [user]),
+  );
 
   async function handleSignOut() {
     try {

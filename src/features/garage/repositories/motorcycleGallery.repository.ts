@@ -1,8 +1,5 @@
 import { supabase } from "@/src/shared/lib/supabase";
-import type {
-  MotorcycleGalleryItemRow,
-  MotorcycleTimelineItemRow,
-} from "@/src/shared/types/database.types";
+import type { MotorcycleGalleryItemRow } from "@/src/shared/types/database.types";
 
 export type CreateMotorcycleGalleryItemPayload = {
   motorcycleId: string;
@@ -38,38 +35,6 @@ export async function createMotorcycleGalleryItem({
       user_id: userId,
       image_url: imageUrl,
       caption,
-    })
-    .select("*")
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
-}
-
-export type CreateGalleryAddedTimelineItemPayload = {
-  motorcycleId: string;
-  userId: string;
-  title: string;
-  description: string;
-};
-
-export async function createGalleryAddedTimelineItem({
-  motorcycleId,
-  userId,
-  title,
-  description,
-}: CreateGalleryAddedTimelineItemPayload): Promise<MotorcycleTimelineItemRow> {
-  const { data, error } = await supabase
-    .from("motorcycle_timeline_items")
-    .insert({
-      motorcycle_id: motorcycleId,
-      user_id: userId,
-      action: "gallery_added",
-      title,
-      description,
     })
     .select("*")
     .single();
