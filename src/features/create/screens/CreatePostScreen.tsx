@@ -3,6 +3,13 @@ import { ChevronLeft, ImagePlus, Minus, Plus } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { Alert, BackHandler, Pressable, StyleSheet, View } from "react-native";
 
+import { useAuth } from "@/src/features/auth/hooks/useAuth";
+import { listMotorcyclesByUserId } from "@/src/features/garage/repositories/motorcycle.repository";
+import { createPostWithPlaceholderMedia } from "@/src/features/feed/repositories/post.repository";
+import { ensureProfileForUser } from "@/src/features/profile/repositories/profile.repository";
+import type { MotorcycleRow } from "@/src/shared/types/database.types";
+import type { MotorcycleSelectCardData } from "@/src/features/create/components/MotorcycleSelectCard";
+
 import {
   AppButton,
   AppCard,
@@ -10,7 +17,6 @@ import {
   AppScreen,
   AppText,
 } from "@/src/shared/components";
-import { motorcycles } from "@/src/shared/constants/mockData";
 import { radius, spacing, theme } from "@/src/shared/theme";
 import { MotorcycleSelectCard } from "@/src/features/create/components/MotorcycleSelectCard";
 
@@ -18,8 +24,26 @@ type CreatePostStep = "media" | "caption" | "motorcycle" | "summary";
 type PostVisibility = "public" | "private";
 
 const maxMediaCount = 10;
+function mapMotorcycleToSelectCardData(
+  motorcycle: MotorcycleRow,
+): MotorcycleSelectCardData {
+  return {
+    id: motorcycle.id,
+    name: motorcycle.name ?? `${motorcycle.brand} ${motorcycle.model}`.trim(),
+    brand: motorcycle.brand,
+    model: motorcycle.model,
+    year: motorcycle.year,
+    imageUrl: motorcycle.image_url,
+    engineInfo:
+      motorcycle.engine_info ??
+      (motorcycle.engine_cc
+        ? `${motorcycle.engine_cc} cc`
+        : "Mesin belum diisi"),
+  };
+}
 
 export function CreatePostScreen() {
+  const { user } = useAuth();
   const [step, setStep] = useState<CreatePostStep>("media");
   const [mediaCount, setMediaCount] = useState(0);
   const [caption, setCaption] = useState("");
@@ -28,9 +52,55 @@ export function CreatePostScreen() {
   >(null);
   const [visibility, setVisibility] = useState<PostVisibility>("public");
 
+  const [motorcycles, setMotorcycles] = useState<MotorcycleRow[]>([]);
+  const [loadingMotorcycles, setLoadingMotorcycles] = useState(true);
+  const [motorcycleError, setMotorcycleError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
   const selectedMotorcycle = motorcycles.find(
     (motorcycle) => motorcycle.id === selectedMotorcycleId,
   );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadMotorcycles() {
+      if (!user) {
+        setLoadingMotorcycles(false);
+        return;
+      }
+
+      try {
+        setLoadingMotorcycles(true);
+        setMotorcycleError(null);
+
+        const data = await listMotorcyclesByUserId(user.id);
+
+        if (isMounted) {
+          setMotorcycles(data);
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan saat memuat motor.";
+
+        if (isMounted) {
+          setMotorcycleError(message);
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingMotorcycles(false);
+        }
+      }
+    }
+
+    loadMotorcycles();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   const isMediaStep = step === "media";
   const isCaptionStep = step === "caption";
@@ -38,7 +108,9 @@ export function CreatePostScreen() {
   const isSummaryStep = step === "summary";
 
   const isNextDisabled =
-    (isMediaStep && mediaCount === 0) || (isCaptionStep && !caption.trim());
+    submitting ||
+    (isMediaStep && mediaCount === 0) ||
+    (isCaptionStep && !caption.trim());
 
   const primaryButtonLabel = isSummaryStep ? "Buat Post" : "Lanjut";
 
@@ -110,17 +182,42 @@ export function CreatePostScreen() {
     handleCreatePost();
   }
 
-  function handleCreatePost() {
-    Alert.alert(
-      "Post dibuat",
-      `Post dengan ${mediaCount} media berhasil dibuat. Data ini masih sementara sampai Supabase dihubungkan.`,
-      [
+  async function handleCreatePost() {
+    if (!user) {
+      Alert.alert("Sesi tidak aktif", "Silakan masuk kembali.");
+      router.replace("/(auth)/login");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      await ensureProfileForUser(user);
+
+      await createPostWithPlaceholderMedia({
+        userId: user.id,
+        motorcycleId: selectedMotorcycleId,
+        caption: caption.trim(),
+        visibility,
+        mediaCount,
+      });
+
+      Alert.alert("Post dibuat", "Post berhasil dibuat dan masuk ke Feed.", [
         {
           text: "OK",
-          onPress: () => router.back(),
+          onPress: () => router.replace("/(tabs)/feed"),
         },
-      ],
-    );
+      ]);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat membuat post.";
+
+      Alert.alert("Gagal membuat post", message);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleAddMedia() {
@@ -176,6 +273,9 @@ export function CreatePostScreen() {
 
         {isMotorcycleStep ? (
           <MotorcycleStep
+            motorcycles={motorcycles}
+            loading={loadingMotorcycles}
+            errorMessage={motorcycleError}
             selectedMotorcycleId={selectedMotorcycleId}
             onSelectMotorcycle={setSelectedMotorcycleId}
             onSkip={() => setStep("summary")}
@@ -198,6 +298,7 @@ export function CreatePostScreen() {
 
         <AppButton
           disabled={isNextDisabled}
+          loading={submitting}
           style={styles.primaryButton}
           onPress={handleNext}
         >
@@ -334,14 +435,21 @@ function CaptionStep({
 }
 
 function MotorcycleStep({
+  motorcycles,
+  loading,
+  errorMessage,
   selectedMotorcycleId,
   onSelectMotorcycle,
   onSkip,
 }: {
+  motorcycles: MotorcycleRow[];
+  loading: boolean;
+  errorMessage: string | null;
   selectedMotorcycleId: string | null;
-  onSelectMotorcycle: (id: string) => void;
+  onSelectMotorcycle: (id: string | null) => void;
   onSkip: () => void;
 }) {
+  const motorcycleCards = motorcycles.map(mapMotorcycleToSelectCardData);
   return (
     <View style={styles.stepContent}>
       <View style={styles.sectionHeader}>
@@ -364,29 +472,72 @@ function MotorcycleStep({
       </View>
 
       <View style={styles.motorcycleList}>
-        {motorcycles.map((motorcycle) => {
-          const isSelected = motorcycle.id === selectedMotorcycleId;
-
-          return (
-            <View
-              key={motorcycle.id}
-              style={[isSelected && styles.selectedMotorcycleWrap]}
+        {loading ? (
+          <AppCard style={styles.inlineStateCard}>
+            <AppText variant="bodyMedium">Memuat motor...</AppText>
+            <AppText
+              variant="caption"
+              tone="secondary"
+              style={styles.inlineStateText}
             >
-              <MotorcycleSelectCard
-                motorcycle={motorcycle}
-                onPress={() => onSelectMotorcycle(motorcycle.id)}
-              />
+              Motor dari Garage kamu sedang dimuat.
+            </AppText>
+          </AppCard>
+        ) : null}
 
-              {isSelected ? (
-                <View style={styles.selectedBadge}>
-                  <AppText variant="tiny" tone="accent">
-                    Dipilih
-                  </AppText>
+        {!loading && errorMessage ? (
+          <AppCard style={styles.inlineStateCard}>
+            <AppText variant="bodyMedium">Motor belum bisa dimuat</AppText>
+            <AppText
+              variant="caption"
+              tone="secondary"
+              style={styles.inlineStateText}
+            >
+              {errorMessage}
+            </AppText>
+          </AppCard>
+        ) : null}
+
+        {!loading && !errorMessage && motorcycleCards.length === 0 ? (
+          <AppCard style={styles.inlineStateCard}>
+            <AppText variant="bodyMedium">Belum ada motor</AppText>
+            <AppText
+              variant="caption"
+              tone="secondary"
+              style={styles.inlineStateText}
+            >
+              Kamu tetap bisa membuat post tanpa menghubungkan motor.
+            </AppText>
+          </AppCard>
+        ) : null}
+
+        {!loading && !errorMessage
+          ? motorcycleCards.map((motorcycle) => {
+              const isSelected = motorcycle.id === selectedMotorcycleId;
+
+              return (
+                <View
+                  key={motorcycle.id}
+                  style={[isSelected && styles.selectedMotorcycleWrap]}
+                >
+                  <MotorcycleSelectCard
+                    motorcycle={motorcycle}
+                    onPress={() =>
+                      onSelectMotorcycle(isSelected ? null : motorcycle.id)
+                    }
+                  />
+
+                  {isSelected ? (
+                    <View style={styles.selectedBadge}>
+                      <AppText variant="tiny" tone="accent">
+                        Tap lagi untuk batal
+                      </AppText>
+                    </View>
+                  ) : null}
                 </View>
-              ) : null}
-            </View>
-          );
-        })}
+              );
+            })
+          : null}
       </View>
     </View>
   );
@@ -704,5 +855,11 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     marginTop: spacing.section,
+  },
+  inlineStateCard: {
+    alignItems: "flex-start",
+  },
+  inlineStateText: {
+    marginTop: spacing.xs,
   },
 });

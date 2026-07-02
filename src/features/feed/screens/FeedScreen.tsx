@@ -1,25 +1,66 @@
 import { router } from "expo-router";
 import { Search, Bell } from "lucide-react-native";
-import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 
-import { AppScreen, AppText } from "@/src/shared/components";
-import { feedPosts } from "@/src/shared/constants/mockData";
 import type { FeedCategory } from "@/src/shared/constants/feedCategories";
 import { spacing, theme } from "@/src/shared/theme";
 import { FeedCategoryChips } from "@/src/features/feed/components/FeedCategoryChips";
 import { FeedPost } from "@/src/features/feed/components/FeedPost";
 
+import { AppButton, AppScreen, AppText } from "@/src/shared/components";
+import { listPublicFeedPosts } from "@/src/features/feed/repositories/post.repository";
+import type { FeedPost as FeedPostType } from "@/src/shared/types/app.types";
+
 export function FeedScreen() {
   const [selectedCategory, setSelectedCategory] = useState<FeedCategory>("All");
+  const [posts, setPosts] = useState<FeedPostType[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(true);
+  const [postError, setPostError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPosts() {
+      try {
+        setLoadingPosts(true);
+        setPostError(null);
+
+        const data = await listPublicFeedPosts();
+
+        if (isMounted) {
+          setPosts(data);
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan saat memuat Feed.";
+
+        if (isMounted) {
+          setPostError(message);
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingPosts(false);
+        }
+      }
+    }
+
+    loadPosts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredPosts = useMemo(() => {
     if (selectedCategory === "All") {
-      return feedPosts;
+      return posts;
     }
 
-    return feedPosts.filter((post) => post.category === selectedCategory);
-  }, [selectedCategory]);
+    return posts.filter((post) => post.category === selectedCategory);
+  }, [posts, selectedCategory]);
 
   return (
     <AppScreen scrollable>
@@ -47,20 +88,52 @@ export function FeedScreen() {
         onSelectCategory={setSelectedCategory}
       />
 
-      <View style={styles.feedList}>
-        {filteredPosts.map((post) => (
-          <FeedPost
-            key={post.id}
-            post={post}
-            onPress={() => router.push(`/post/${post.id}`)}
-            onPressMotorcycle={() => {
-              if (post.relatedMotorcycleId) {
-                router.push(`/motorcycle/${post.relatedMotorcycleId}`);
-              }
-            }}
-          />
-        ))}
-      </View>
+      {loadingPosts ? (
+        <View style={styles.centerState}>
+          <ActivityIndicator color={theme.primary} />
+          <AppText tone="secondary" style={styles.centerText}>
+            Memuat Feed...
+          </AppText>
+        </View>
+      ) : null}
+
+      {!loadingPosts && postError ? (
+        <View style={styles.centerState}>
+          <AppText variant="title">Feed belum bisa dimuat</AppText>
+          <AppText tone="secondary" style={styles.centerText}>
+            {postError}
+          </AppText>
+          <AppButton onPress={() => router.replace("/(tabs)/feed")}>
+            Muat Ulang
+          </AppButton>
+        </View>
+      ) : null}
+
+      {!loadingPosts && !postError && filteredPosts.length === 0 ? (
+        <View style={styles.centerState}>
+          <AppText variant="title">Belum ada post</AppText>
+          <AppText tone="secondary" style={styles.centerText}>
+            Post publik dari rider akan tampil di sini.
+          </AppText>
+        </View>
+      ) : null}
+
+      {!loadingPosts && !postError && filteredPosts.length > 0 ? (
+        <View style={styles.feedList}>
+          {filteredPosts.map((post) => (
+            <FeedPost
+              key={post.id}
+              post={post}
+              onPress={() => router.push(`/post/${post.id}`)}
+              onPressMotorcycle={() => {
+                if (post.relatedMotorcycleId) {
+                  router.push(`/motorcycle/${post.relatedMotorcycleId}`);
+                }
+              }}
+            />
+          ))}
+        </View>
+      ) : null}
     </AppScreen>
   );
 }
@@ -93,5 +166,15 @@ const styles = StyleSheet.create({
   feedList: {
     marginTop: spacing.lg,
     gap: spacing.xl,
+  },
+  centerState: {
+    minHeight: 260,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.md,
+  },
+  centerText: {
+    maxWidth: 280,
+    textAlign: "center",
   },
 });

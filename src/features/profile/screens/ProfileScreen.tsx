@@ -7,7 +7,7 @@ import {
   Settings,
 } from "lucide-react-native";
 import { router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
 
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
@@ -15,8 +15,9 @@ import { ProfileHeader } from "@/src/features/profile/components/ProfileHeader";
 import { ProfileMenuItem } from "@/src/features/profile/components/ProfileMenuItem";
 import { ProfilePostGrid } from "@/src/features/profile/components/ProfilePostGrid";
 import { ensureProfileForUser } from "@/src/features/profile/repositories/profile.repository";
+import { listPostsByUserId } from "@/src/features/feed/repositories/post.repository";
+import type { FeedPost } from "@/src/shared/types/app.types";
 import { AppButton, AppScreen, AppText } from "@/src/shared/components";
-import { feedPosts } from "@/src/shared/constants/mockData";
 import { spacing, theme } from "@/src/shared/theme";
 import type { ProfileRow } from "@/src/shared/types/database.types";
 
@@ -27,14 +28,7 @@ export function ProfileScreen() {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
-
-  const myPosts = useMemo(() => {
-    if (!user) {
-      return [];
-    }
-
-    return feedPosts.filter((post) => post.userId === user.id);
-  }, [user]);
+  const [myPosts, setMyPosts] = useState<FeedPost[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -49,10 +43,14 @@ export function ProfileScreen() {
         setLoadingProfile(true);
         setProfileError(null);
 
-        const userProfile = await ensureProfileForUser(user);
+        const [userProfile, posts] = await Promise.all([
+          ensureProfileForUser(user),
+          listPostsByUserId(user.id),
+        ]);
 
         if (isMounted) {
           setProfile(userProfile);
+          setMyPosts(posts);
         }
       } catch (error) {
         const message =
