@@ -1,7 +1,15 @@
+import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { ChevronLeft, ImagePlus, Minus, Plus } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { Alert, BackHandler, Pressable, StyleSheet, View } from "react-native";
+import {
+  Alert,
+  BackHandler,
+  Image,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
 
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { listMotorcyclesByUserId } from "@/src/features/garage/repositories/motorcycle.repository";
@@ -19,6 +27,10 @@ import {
 } from "@/src/shared/components";
 import { radius, spacing, theme } from "@/src/shared/theme";
 import { MotorcycleSelectCard } from "@/src/features/create/components/MotorcycleSelectCard";
+import {
+  createStorageImagePath,
+  uploadImageToStorage,
+} from "@/src/shared/lib/storage";
 
 type CreatePostStep = "media" | "caption" | "motorcycle" | "summary";
 type PostVisibility = "public" | "private";
@@ -45,7 +57,7 @@ function mapMotorcycleToSelectCardData(
 export function CreatePostScreen() {
   const { user } = useAuth();
   const [step, setStep] = useState<CreatePostStep>("media");
-  const [mediaCount, setMediaCount] = useState(0);
+  const [selectedMediaUris, setSelectedMediaUris] = useState<string[]>([]);
   const [caption, setCaption] = useState("");
   const [selectedMotorcycleId, setSelectedMotorcycleId] = useState<
     string | null
@@ -56,6 +68,7 @@ export function CreatePostScreen() {
   const [loadingMotorcycles, setLoadingMotorcycles] = useState(true);
   const [motorcycleError, setMotorcycleError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const mediaCount = selectedMediaUris.length;
 
   const selectedMotorcycle = motorcycles.find(
     (motorcycle) => motorcycle.id === selectedMotorcycleId,
@@ -182,6 +195,32 @@ export function CreatePostScreen() {
     handleCreatePost();
   }
 
+  async function uploadSelectedPostMedia() {
+    if (!user) {
+      throw new Error("Sesi tidak aktif.");
+    }
+
+    if (selectedMediaUris.length === 0) {
+      throw new Error("Pilih minimal satu foto untuk Post.");
+    }
+
+    const uploadedUrls = await Promise.all(
+      selectedMediaUris.map((uri) => {
+        const path = createStorageImagePath({
+          userId: user.id,
+          folder: "posts",
+        });
+
+        return uploadImageToStorage({
+          uri,
+          path,
+        });
+      }),
+    );
+
+    return uploadedUrls;
+  }
+
   async function handleCreatePost() {
     if (!user) {
       Alert.alert("Sesi tidak aktif", "Silakan masuk kembali.");
@@ -194,12 +233,14 @@ export function CreatePostScreen() {
 
       await ensureProfileForUser(user);
 
+      const uploadedMediaUrls = await uploadSelectedPostMedia();
+
       await createPostWithPlaceholderMedia({
         userId: user.id,
         motorcycleId: selectedMotorcycleId,
         caption: caption.trim(),
         visibility,
-        mediaCount,
+        mediaUrls: uploadedMediaUrls,
       });
 
       Alert.alert("Post dibuat", "Post berhasil dibuat dan masuk ke Feed.", [
@@ -220,12 +261,49 @@ export function CreatePostScreen() {
     }
   }
 
-  function handleAddMedia() {
-    setMediaCount((current) => Math.min(current + 1, maxMediaCount));
+  async function handlePickMedia() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert(
+        "Izin diperlukan",
+        "Izinkan akses galeri untuk memilih foto post.",
+      );
+      return;
+    }
+
+    const remainingSlots = maxMediaCount - selectedMediaUris.length;
+
+    if (remainingSlots <= 0) {
+      Alert.alert("Batas media tercapai", `Maksimal ${maxMediaCount} foto.`);
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsMultipleSelection: true,
+      selectionLimit: remainingSlots,
+      quality: 0.88,
+    });
+
+    if (result.canceled) {
+      return;
+    }
+
+    const nextUris = result.assets.map((asset) => asset.uri).filter(Boolean);
+
+    if (nextUris.length === 0) {
+      Alert.alert("Foto tidak valid", "Pilih foto lain untuk Post.");
+      return;
+    }
+
+    setSelectedMediaUris((current) =>
+      [...current, ...nextUris].slice(0, maxMediaCount),
+    );
   }
 
-  function handleRemoveMedia() {
-    setMediaCount((current) => Math.max(current - 1, 0));
+  function handleRemoveMedia(uri: string) {
+    setSelectedMediaUris((current) => current.filter((item) => item !== uri));
   }
 
   return (
@@ -261,8 +339,8 @@ export function CreatePostScreen() {
       <View style={styles.content}>
         {isMediaStep ? (
           <MediaStep
-            mediaCount={mediaCount}
-            onAddMedia={handleAddMedia}
+            selectedMediaUris={selectedMediaUris}
+            onPickMedia={handlePickMedia}
             onRemoveMedia={handleRemoveMedia}
           />
         ) : null}
@@ -310,14 +388,15 @@ export function CreatePostScreen() {
 }
 
 function MediaStep({
-  mediaCount,
-  onAddMedia,
+  selectedMediaUris,
+  onPickMedia,
   onRemoveMedia,
 }: {
-  mediaCount: number;
-  onAddMedia: () => void;
-  onRemoveMedia: () => void;
+  selectedMediaUris: string[];
+  onPickMedia: () => void;
+  onRemoveMedia: (uri: string) => void;
 }) {
+  const mediaCount = selectedMediaUris.length;
   const hasMedia = mediaCount > 0;
   const isMaxMedia = mediaCount >= maxMediaCount;
 
@@ -340,7 +419,11 @@ function MediaStep({
         </AppText>
       </View>
 
-      <Pressable style={styles.mediaPickerCard} onPress={onAddMedia}>
+      <Pressable
+        style={styles.mediaPickerCard}
+        onPress={onPickMedia}
+        disabled={isMaxMedia}
+      >
         <View style={styles.mediaIconCircle}>
           <ImagePlus size={26} color={theme.primary} />
         </View>
@@ -350,46 +433,45 @@ function MediaStep({
         </AppText>
 
         <AppText variant="caption" tone="secondary" style={styles.mediaText}>
-          {hasMedia
-            ? "Preview carousel akan dibuat setelah image picker aktif."
-            : "Untuk MVP sekarang, tombol ini mensimulasikan tambah foto."}
+          {isMaxMedia
+            ? `Maksimal ${maxMediaCount} foto sudah dipilih.`
+            : hasMedia
+              ? "Tekan untuk menambahkan foto lagi."
+              : "Pilih foto dari perangkat kamu."}
         </AppText>
       </Pressable>
 
-      <View style={styles.mediaControlRow}>
-        <Pressable
-          style={[styles.counterButton, mediaCount === 0 && styles.disabledBox]}
-          onPress={onRemoveMedia}
-          disabled={mediaCount === 0}
-        >
-          <Minus
-            size={18}
-            color={mediaCount === 0 ? theme.textMuted : theme.textPrimary}
-          />
-        </Pressable>
+      {hasMedia ? (
+        <View style={styles.mediaPreviewGrid}>
+          {selectedMediaUris.map((uri, index) => (
+            <View key={`${uri}-${index}`} style={styles.mediaPreviewItem}>
+              <Image
+                source={{ uri }}
+                style={styles.mediaPreviewImage}
+                resizeMode="cover"
+              />
 
-        <View style={styles.mediaCountBox}>
-          <AppText variant="title">{mediaCount}</AppText>
-          <AppText variant="caption" tone="muted">
-            / {maxMediaCount}
-          </AppText>
+              <Pressable
+                style={styles.removeMediaButton}
+                onPress={() => onRemoveMedia(uri)}
+                hitSlop={10}
+              >
+                <Minus size={16} color={theme.textPrimary} />
+              </Pressable>
+            </View>
+          ))}
         </View>
+      ) : null}
 
-        <Pressable
-          style={[styles.counterButton, isMaxMedia && styles.disabledBox]}
-          onPress={onAddMedia}
-          disabled={isMaxMedia}
-        >
-          <Plus
-            size={18}
-            color={isMaxMedia ? theme.textMuted : theme.textPrimary}
-          />
-        </Pressable>
+      <View style={styles.mediaCountBox}>
+        <AppText variant="title">{mediaCount}</AppText>
+        <AppText variant="caption" tone="muted">
+          / {maxMediaCount}
+        </AppText>
       </View>
 
       <AppText variant="caption" tone="muted" style={styles.note}>
-        Nanti saat image picker aktif, setiap media akan masuk ke field
-        post.media[].
+        Foto akan di-upload ke Supabase Storage saat Post dibuat.
       </AppText>
     </View>
   );
@@ -760,25 +842,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     maxWidth: 260,
   },
-  mediaControlRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.md,
-  },
-  counterButton: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.pill,
-    backgroundColor: theme.surface,
-    borderWidth: 1,
-    borderColor: theme.borderSoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  disabledBox: {
-    opacity: 0.45,
-  },
   mediaCountBox: {
     minWidth: 86,
     minHeight: 54,
@@ -861,5 +924,36 @@ const styles = StyleSheet.create({
   },
   inlineStateText: {
     marginTop: spacing.xs,
+  },
+  mediaPreviewGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  mediaPreviewItem: {
+    width: "31.8%",
+    aspectRatio: 1,
+    borderRadius: radius.lg,
+    backgroundColor: theme.surfaceSoft,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    overflow: "hidden",
+  },
+  mediaPreviewImage: {
+    width: "100%",
+    height: "100%",
+  },
+  removeMediaButton: {
+    position: "absolute",
+    right: spacing.xs,
+    top: spacing.xs,
+    width: 28,
+    height: 28,
+    borderRadius: radius.pill,
+    backgroundColor: "rgba(11, 15, 20, 0.82)",
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
