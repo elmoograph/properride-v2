@@ -1,3 +1,4 @@
+import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import { useEffect, useState } from "react";
@@ -24,6 +25,10 @@ import {
 } from "@/src/shared/components";
 import { radius, spacing, theme } from "@/src/shared/theme";
 import type { MotorcycleRow } from "@/src/shared/types/database.types";
+import {
+  createStorageImagePath,
+  uploadImageToStorage,
+} from "@/src/shared/lib/storage";
 
 type GalleryStep = "gallery" | "share" | "post";
 type ShareChoice = "gallery_only" | "share_to_feed";
@@ -39,7 +44,7 @@ export function AddGalleryScreen() {
   const [motorcycleError, setMotorcycleError] = useState<string | null>(null);
 
   const [step, setStep] = useState<GalleryStep>("gallery");
-  const [hasMedia, setHasMedia] = useState(false);
+  const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const [galleryCaption, setGalleryCaption] = useState("");
   const [postCaption, setPostCaption] = useState("");
   const [shareChoice, setShareChoice] = useState<ShareChoice | null>(null);
@@ -128,9 +133,40 @@ export function AddGalleryScreen() {
   const isSubmitDisabled =
     submitting ||
     !motorcycle ||
-    (isGalleryStep && !hasMedia) ||
+    (isGalleryStep && !selectedImageUri) ||
     (isShareStep && !shareChoice) ||
     (isPostStep && !postCaption.trim());
+
+  async function handlePickMedia() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert(
+        "Izin diperlukan",
+        "Izinkan akses galeri untuk memilih foto motor.",
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      quality: 0.88,
+    });
+
+    if (result.canceled) {
+      return;
+    }
+
+    const imageUri = result.assets[0]?.uri;
+
+    if (!imageUri) {
+      Alert.alert("Foto tidak valid", "Pilih foto lain untuk Gallery.");
+      return;
+    }
+
+    setSelectedImageUri(imageUri);
+  }
 
   function handleBack() {
     if (isPostStep) {
@@ -172,6 +208,23 @@ export function AddGalleryScreen() {
     saveGalleryAndPost();
   }
 
+  async function uploadSelectedGalleryImage() {
+    if (!user || !motorcycle || !selectedImageUri) {
+      throw new Error("Foto gallery belum siap untuk di-upload.");
+    }
+
+    const path = createStorageImagePath({
+      userId: user.id,
+      folder: "gallery",
+      ownerId: motorcycle.id,
+    });
+
+    return uploadImageToStorage({
+      uri: selectedImageUri,
+      path,
+    });
+  }
+
   async function saveGalleryOnly() {
     if (!motorcycle) {
       return;
@@ -186,10 +239,12 @@ export function AddGalleryScreen() {
     try {
       setSubmitting(true);
 
+      const uploadedImageUrl = await uploadSelectedGalleryImage();
+
       await createMotorcycleGalleryItem({
         motorcycleId: motorcycle.id,
         userId: user.id,
-        imageUrl: TEMP_GALLERY_IMAGE_URL,
+        imageUrl: uploadedImageUrl,
         caption: galleryCaption.trim() || null,
       });
 
@@ -229,10 +284,12 @@ export function AddGalleryScreen() {
     try {
       setSubmitting(true);
 
+      const uploadedImageUrl = await uploadSelectedGalleryImage();
+
       await createMotorcycleGalleryItem({
         motorcycleId: motorcycle.id,
         userId: user.id,
-        imageUrl: TEMP_GALLERY_IMAGE_URL,
+        imageUrl: uploadedImageUrl,
         caption: galleryCaption.trim() || null,
       });
 
@@ -241,7 +298,7 @@ export function AddGalleryScreen() {
         motorcycleId: motorcycle.id,
         caption: postCaption.trim(),
         visibility: "public",
-        mediaCount: 1,
+        mediaUrls: [uploadedImageUrl],
       });
 
       Alert.alert(
@@ -348,9 +405,9 @@ export function AddGalleryScreen() {
       <View style={styles.content}>
         {isGalleryStep ? (
           <GalleryContentStep
-            hasMedia={hasMedia}
+            selectedImageUri={selectedImageUri}
             galleryCaption={galleryCaption}
-            onPickMedia={() => setHasMedia(true)}
+            onPickMedia={handlePickMedia}
             onChangeGalleryCaption={setGalleryCaption}
           />
         ) : null}
@@ -390,12 +447,12 @@ export function AddGalleryScreen() {
 }
 
 function GalleryContentStep({
-  hasMedia,
+  selectedImageUri,
   galleryCaption,
   onPickMedia,
   onChangeGalleryCaption,
 }: {
-  hasMedia: boolean;
+  selectedImageUri: string | null;
   galleryCaption: string;
   onPickMedia: () => void;
   onChangeGalleryCaption: (value: string) => void;
@@ -420,12 +477,13 @@ function GalleryContentStep({
       </View>
 
       <ImageUploadBox
-        title={hasMedia ? "Foto sudah dipilih" : "Tambah foto gallery"}
+        title={selectedImageUri ? "Foto sudah dipilih" : "Tambah foto gallery"}
         description={
-          hasMedia
-            ? "Preview foto akan dibuat setelah image picker aktif."
+          selectedImageUri
+            ? "Foto siap di-upload ke Gallery motor."
             : "Pilih satu foto terbaik untuk galeri motor ini."
         }
+        imageUri={selectedImageUri}
         onPress={onPickMedia}
       />
 

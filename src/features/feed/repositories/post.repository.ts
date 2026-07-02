@@ -26,7 +26,8 @@ export type CreatePostPayload = {
   motorcycleId?: string | null;
   caption: string;
   visibility: Visibility;
-  mediaCount: number;
+  mediaCount?: number;
+  mediaUrls?: string[];
 };
 
 export async function createPostWithPlaceholderMedia({
@@ -34,7 +35,8 @@ export async function createPostWithPlaceholderMedia({
   motorcycleId = null,
   caption,
   visibility,
-  mediaCount,
+  mediaCount = 1,
+  mediaUrls,
 }: CreatePostPayload): Promise<PostWithMedia> {
   const { data: post, error: postError } = await supabase
     .from("posts")
@@ -52,9 +54,14 @@ export async function createPostWithPlaceholderMedia({
     throw postError;
   }
 
-  const mediaRows = Array.from({ length: mediaCount }).map((_, index) => ({
+  const mediaSources =
+    mediaUrls && mediaUrls.length > 0
+      ? mediaUrls
+      : Array.from({ length: mediaCount }).map(() => TEMP_POST_IMAGE_URL);
+
+  const mediaRows = mediaSources.map((mediaUrl, index) => ({
     post_id: post.id,
-    media_url: TEMP_POST_IMAGE_URL,
+    media_url: mediaUrl,
     media_type: "image" as const,
     order_index: index,
   }));
