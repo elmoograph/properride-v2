@@ -9,6 +9,8 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import { useAuth } from "@/src/features/auth/hooks/useAuth";
+import { createMotorcycleGalleryItem } from "@/src/features/garage/repositories/motorcycleGallery.repository";
 
 import { getMotorcycleById } from "@/src/features/garage/repositories/motorcycle.repository";
 import {
@@ -23,9 +25,12 @@ import { radius, spacing, theme } from "@/src/shared/theme";
 import type { MotorcycleRow } from "@/src/shared/types/database.types";
 
 type GalleryStep = "gallery" | "share" | "post";
+const TEMP_GALLERY_IMAGE_URL =
+  "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=1200";
 
 export function AddGalleryScreen() {
   const { motorcycleId } = useLocalSearchParams<{ motorcycleId?: string }>();
+  const { user } = useAuth();
 
   const [motorcycle, setMotorcycle] = useState<MotorcycleRow | null>(null);
   const [loadingMotorcycle, setLoadingMotorcycle] = useState(true);
@@ -35,6 +40,7 @@ export function AddGalleryScreen() {
   const [hasMedia, setHasMedia] = useState(false);
   const [galleryCaption, setGalleryCaption] = useState("");
   const [postCaption, setPostCaption] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -116,6 +122,7 @@ export function AddGalleryScreen() {
       : "Simpan Gallery + Post";
 
   const isSubmitDisabled =
+    submitting ||
     !motorcycle ||
     (isGalleryStep && !hasMedia) ||
     (isPostStep && !postCaption.trim());
@@ -152,38 +159,90 @@ export function AddGalleryScreen() {
     saveGalleryAndPost();
   }
 
-  function saveGalleryOnly() {
+  async function saveGalleryOnly() {
     if (!motorcycle) {
       return;
     }
 
-    Alert.alert(
-      "Gallery tersimpan",
-      `Foto berhasil ditambahkan ke Gallery ${motorcycle.brand} ${motorcycle.model}. Data gallery akan dihubungkan ke Supabase pada step berikutnya.`,
-      [
-        {
-          text: "OK",
-          onPress: () => router.back(),
-        },
-      ],
-    );
+    if (!user) {
+      Alert.alert("Sesi tidak aktif", "Silakan masuk kembali.");
+      router.replace("/(auth)/login");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      await createMotorcycleGalleryItem({
+        motorcycleId: motorcycle.id,
+        userId: user.id,
+        imageUrl: TEMP_GALLERY_IMAGE_URL,
+        caption: galleryCaption.trim() || null,
+      });
+
+      Alert.alert(
+        "Gallery tersimpan",
+        `Foto berhasil ditambahkan ke Gallery ${motorcycle.brand} ${motorcycle.model}.`,
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace(`/motorcycle/${motorcycle.id}`),
+          },
+        ],
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat menyimpan gallery.";
+
+      Alert.alert("Gagal menyimpan gallery", message);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  function saveGalleryAndPost() {
+  async function saveGalleryAndPost() {
     if (!motorcycle) {
       return;
     }
 
-    Alert.alert(
-      "Gallery dan Post tersimpan",
-      `Foto berhasil ditambahkan ke Gallery ${motorcycle.brand} ${motorcycle.model} dan dibuat sebagai Post di Feed. Data gallery dan post akan dihubungkan ke Supabase pada step berikutnya.`,
-      [
-        {
-          text: "OK",
-          onPress: () => router.back(),
-        },
-      ],
-    );
+    if (!user) {
+      Alert.alert("Sesi tidak aktif", "Silakan masuk kembali.");
+      router.replace("/(auth)/login");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      await createMotorcycleGalleryItem({
+        motorcycleId: motorcycle.id,
+        userId: user.id,
+        imageUrl: TEMP_GALLERY_IMAGE_URL,
+        caption: galleryCaption.trim() || null,
+      });
+
+      Alert.alert(
+        "Gallery tersimpan",
+        "Foto sudah masuk ke Gallery. Pembuatan Post Feed akan dihubungkan pada phase berikutnya.",
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace(`/motorcycle/${motorcycle.id}`),
+          },
+        ],
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat menyimpan gallery.";
+
+      Alert.alert("Gagal menyimpan gallery", message);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (loadingMotorcycle) {
@@ -291,6 +350,7 @@ export function AddGalleryScreen() {
 
         <AppButton
           disabled={isSubmitDisabled}
+          loading={submitting}
           style={styles.submitButton}
           onPress={handlePrimaryAction}
         >

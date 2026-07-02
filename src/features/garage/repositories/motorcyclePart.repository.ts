@@ -12,11 +12,14 @@ export type CreateMotorcyclePartPayload = {
   name: string;
 };
 
-export async function listPartsByMotorcycleId(motorcycleId: string) {
+export async function listPartsByMotorcycleId(
+  motorcycleId: string,
+): Promise<MotorcyclePartRow[]> {
   const { data, error } = await supabase
     .from("motorcycle_parts")
     .select("*")
     .eq("motorcycle_id", motorcycleId)
+    .is("archived_at", null)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -41,6 +44,7 @@ export async function createMotorcyclePart({
       category,
       brand,
       name,
+      archived_at: null,
     })
     .select("*")
     .single();
@@ -52,10 +56,12 @@ export async function createMotorcyclePart({
   return data;
 }
 
-export async function deleteMotorcyclePartById(partId: string) {
+export async function archiveMotorcyclePartById(partId: string): Promise<void> {
   const { error } = await supabase
     .from("motorcycle_parts")
-    .delete()
+    .update({
+      archived_at: new Date().toISOString(),
+    })
     .eq("id", partId);
 
   if (error) {
@@ -70,7 +76,9 @@ export type CreateMotorcycleTimelineItemPayload = {
   description: string;
 };
 
-export async function listTimelineItemsByMotorcycleId(motorcycleId: string) {
+export async function listTimelineItemsByMotorcycleId(
+  motorcycleId: string,
+): Promise<MotorcycleTimelineItemRow[]> {
   const { data, error } = await supabase
     .from("motorcycle_timeline_items")
     .select("*")
@@ -109,7 +117,7 @@ export async function createPartAddedTimelineItem({
   return data;
 }
 
-export async function createPartRemovedTimelineItem({
+export async function createPartArchivedTimelineItem({
   motorcycleId,
   userId,
   title,

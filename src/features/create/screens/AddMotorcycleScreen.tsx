@@ -5,6 +5,7 @@ import { Alert, Pressable, StyleSheet, TextInput, View } from "react-native";
 
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { createMotorcycle } from "@/src/features/garage/repositories/motorcycle.repository";
+import { ensureProfileForUser } from "@/src/features/profile/repositories/profile.repository";
 import {
   AppButton,
   AppScreen,
@@ -65,7 +66,7 @@ export function AddMotorcycleScreen() {
 
     try {
       setSubmitting(true);
-
+      await ensureProfileForUser(user);
       await createMotorcycle({
         userId: user.id,
         brand,

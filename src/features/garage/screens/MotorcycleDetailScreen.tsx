@@ -7,7 +7,7 @@ import {
   Gauge,
   Package,
   Rows3,
-  Trash2,
+  Archive,
 } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -25,18 +25,19 @@ import {
   AppScreen,
   AppText,
 } from "@/src/shared/components";
-import { motorcycleGalleryItems } from "@/src/shared/constants/mockData";
 import { GarageGalleryStrip } from "@/src/features/garage/components/GarageGalleryStrip";
 import { radius, spacing, theme } from "@/src/shared/theme";
 import { getMotorcycleById } from "@/src/features/garage/repositories/motorcycle.repository";
 import type {
+  MotorcycleGalleryItemRow,
   MotorcyclePartRow,
   MotorcycleRow,
   MotorcycleTimelineItemRow,
 } from "@/src/shared/types/database.types";
+import { listGalleryItemsByMotorcycleId } from "@/src/features/garage/repositories/motorcycleGallery.repository";
 import {
-  createPartRemovedTimelineItem,
-  deleteMotorcyclePartById,
+  archiveMotorcyclePartById,
+  createPartArchivedTimelineItem,
   listPartsByMotorcycleId,
   listTimelineItemsByMotorcycleId,
 } from "@/src/features/garage/repositories/motorcyclePart.repository";
@@ -78,8 +79,10 @@ export function MotorcycleDetailScreen() {
   const [timelineItems, setTimelineItems] = useState<
     MotorcycleTimelineItemRow[]
   >([]);
-
-  const [deletingPartId, setDeletingPartId] = useState<string | null>(null);
+  const [galleryItems, setGalleryItems] = useState<MotorcycleGalleryItemRow[]>(
+    [],
+  );
+  const [archivingPartId, setArchivingPartId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -95,16 +98,19 @@ export function MotorcycleDetailScreen() {
         setLoading(true);
         setErrorMessage(null);
 
-        const [motorcycleData, partsData, timelineData] = await Promise.all([
-          getMotorcycleById(id),
-          listPartsByMotorcycleId(id),
-          listTimelineItemsByMotorcycleId(id),
-        ]);
+        const [motorcycleData, partsData, timelineData, galleryData] =
+          await Promise.all([
+            getMotorcycleById(id),
+            listPartsByMotorcycleId(id),
+            listTimelineItemsByMotorcycleId(id),
+            listGalleryItemsByMotorcycleId(id),
+          ]);
 
         if (isMounted) {
           setMotorcycle(motorcycleData);
           setParts(partsData);
           setTimelineItems(timelineData);
+          setGalleryItems(galleryData);
         }
       } catch (error) {
         const message =
@@ -158,10 +164,6 @@ export function MotorcycleDetailScreen() {
     );
   }
 
-  const gallery = motorcycleGalleryItems.filter(
-    (item) => item.motorcycleId === motorcycle.id,
-  );
-
   const motorcycleImageUrl =
     motorcycle.image_url ??
     "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=1200";
@@ -173,33 +175,33 @@ export function MotorcycleDetailScreen() {
     motorcycle.engine_info ??
     (motorcycle.engine_cc ? `${motorcycle.engine_cc} cc` : "Belum diisi");
 
-  async function handleDeletePart(part: MotorcyclePartRow) {
+  async function handleArchivePart(part: MotorcyclePartRow) {
     if (!motorcycle) {
       return;
     }
 
     Alert.alert(
-      "Hapus part?",
-      `Part ${part.name} akan dihapus dari setup motor ini.`,
+      "Archive part?",
+      `Part ${part.name} akan diarsipkan dari setup aktif motor ini.`,
       [
         {
           text: "Batal",
           style: "cancel",
         },
         {
-          text: "Hapus",
+          text: "Archive",
           style: "destructive",
           onPress: async () => {
             try {
-              setDeletingPartId(part.id);
+              setArchivingPartId(part.id);
 
-              await deleteMotorcyclePartById(part.id);
+              await archiveMotorcyclePartById(part.id);
 
-              await createPartRemovedTimelineItem({
+              await createPartArchivedTimelineItem({
                 motorcycleId: motorcycle.id,
                 userId: motorcycle.user_id,
                 title: part.name,
-                description: `${part.brand} dihapus dari setup ${motorcycle.brand} ${motorcycle.model}.`,
+                description: `${part.brand} diarsipkan dari setup aktif ${motorcycle.brand} ${motorcycle.model}.`,
               });
 
               const [nextParts, nextTimelineItems] = await Promise.all([
@@ -213,11 +215,11 @@ export function MotorcycleDetailScreen() {
               const message =
                 error instanceof Error
                   ? error.message
-                  : "Terjadi kesalahan saat menghapus part.";
+                  : "Terjadi kesalahan saat mengarsipkan part.";
 
-              Alert.alert("Gagal menghapus part", message);
+              Alert.alert("Gagal mengarsipkan part", message);
             } finally {
-              setDeletingPartId(null);
+              setArchivingPartId(null);
             }
           },
         },
@@ -318,8 +320,8 @@ export function MotorcycleDetailScreen() {
             <SetupPartsTab
               motorcycleId={motorcycle.id}
               parts={parts}
-              deletingPartId={deletingPartId}
-              onDeletePart={handleDeletePart}
+              archivingPartId={archivingPartId}
+              onArchivePart={handleArchivePart}
             />
           ) : null}
 
@@ -328,7 +330,7 @@ export function MotorcycleDetailScreen() {
           ) : null}
 
           {activeTab === "gallery" ? (
-            <GalleryTab gallery={gallery} motorcycleId={motorcycle.id} />
+            <GalleryTab gallery={galleryItems} motorcycleId={motorcycle.id} />
           ) : null}
         </View>
       </View>
@@ -339,13 +341,13 @@ export function MotorcycleDetailScreen() {
 function SetupPartsTab({
   motorcycleId,
   parts,
-  deletingPartId,
-  onDeletePart,
+  archivingPartId,
+  onArchivePart,
 }: {
   motorcycleId: string;
   parts: MotorcyclePartRow[];
-  deletingPartId: string | null;
-  onDeletePart: (part: MotorcyclePartRow) => void;
+  archivingPartId: string | null;
+  onArchivePart: (part: MotorcyclePartRow) => void;
 }) {
   const groupedParts = useMemo(() => groupPartsByCategory(parts), [parts]);
   const [expandedCategories, setExpandedCategories] = useState<
@@ -452,21 +454,22 @@ function SetupPartsTab({
                         </View>
 
                         <Pressable
-                          disabled={deletingPartId === part.id}
-                          onPress={() => onDeletePart(part)}
+                          disabled={archivingPartId === part.id}
+                          onPress={() => onArchivePart(part)}
                           style={({ pressed }) => [
-                            styles.deletePartButton,
+                            styles.archivePartButton,
                             pressed && styles.pressed,
-                            deletingPartId === part.id && styles.disabledButton,
+                            archivingPartId === part.id &&
+                              styles.disabledButton,
                           ]}
                         >
-                          {deletingPartId === part.id ? (
+                          {archivingPartId === part.id ? (
                             <ActivityIndicator
                               size="small"
-                              color={theme.danger}
+                              color={theme.primary}
                             />
                           ) : (
-                            <Trash2 size={16} color={theme.danger} />
+                            <Archive size={16} color={theme.primary} />
                           )}
                         </Pressable>
                       </View>
@@ -568,7 +571,7 @@ function GalleryTab({
   gallery,
   motorcycleId,
 }: {
-  gallery: typeof motorcycleGalleryItems;
+  gallery: MotorcycleGalleryItemRow[];
   motorcycleId: string;
 }) {
   return (
@@ -594,7 +597,12 @@ function GalleryTab({
           </AppText>
         </AppCard>
       ) : (
-        <GarageGalleryStrip items={gallery} />
+        <GarageGalleryStrip
+          items={gallery.map((item) => ({
+            id: item.id,
+            imageUrl: item.image_url,
+          }))}
+        />
       )}
 
       <AppButton
@@ -788,13 +796,13 @@ const styles = StyleSheet.create({
   partMeta: {
     marginTop: spacing.xs,
   },
-  deletePartButton: {
+  archivePartButton: {
     width: 36,
     height: 36,
     borderRadius: radius.pill,
-    backgroundColor: "rgba(239, 68, 68, 0.12)",
+    backgroundColor: theme.primarySoft,
     borderWidth: 1,
-    borderColor: "rgba(239, 68, 68, 0.28)",
+    borderColor: theme.borderSoft,
     alignItems: "center",
     justifyContent: "center",
   },

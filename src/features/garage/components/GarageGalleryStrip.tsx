@@ -1,10 +1,14 @@
 import { Image, StyleSheet, View } from "react-native";
 
-import type { GalleryItem } from "@/src/shared/types/app.types";
 import { radius, spacing, theme } from "@/src/shared/theme";
 
+export type GarageGalleryStripItem = {
+  id: string;
+  imageUrl: string;
+};
+
 type GarageGalleryStripProps = {
-  items: GalleryItem[];
+  items: GarageGalleryStripItem[];
 };
 
 export function GarageGalleryStrip({ items }: GarageGalleryStripProps) {
