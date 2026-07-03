@@ -214,6 +214,7 @@ export function ProfileScreen() {
             <ProfileMenuItem
               icon={<CircleHelp size={18} color={theme.textPrimary} />}
               title="Bantuan"
+              onPress={() => router.push("/help")}
             />
           </View>
         </View>
