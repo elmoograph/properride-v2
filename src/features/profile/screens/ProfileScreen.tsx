@@ -195,6 +195,7 @@ export function ProfileScreen() {
             <ProfileMenuItem
               icon={<Bookmark size={18} color={theme.textPrimary} />}
               title="Tersimpan"
+              onPress={() => router.push("/saved-posts")}
             />
 
             <ProfileMenuItem
