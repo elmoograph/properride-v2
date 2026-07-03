@@ -21,6 +21,10 @@ type PostWithMedia = PostRow & {
   post_media: PostMediaRow[];
 };
 
+type PostLikesCountRow = {
+  post_id: string;
+};
+
 export type CreatePostPayload = {
   userId: string;
   motorcycleId?: string | null;
@@ -170,6 +174,23 @@ async function mapPostsToFeedPosts(
     profiles.map((profile) => [profile.id, profile]),
   );
 
+  const postIds = posts.map((post) => post.id);
+
+  const { data: likesRows, error: likesError } = await supabase
+    .from("post_likes")
+    .select("post_id")
+    .in("post_id", postIds);
+
+  if (likesError) {
+    throw likesError;
+  }
+
+  const likesCountMap = new Map<string, number>();
+
+  (likesRows as PostLikesCountRow[]).forEach((row) => {
+    likesCountMap.set(row.post_id, (likesCountMap.get(row.post_id) ?? 0) + 1);
+  });
+
   return posts.map((post) => {
     const profile = profileMap.get(post.user_id);
     const sortedMedia = [...post.post_media].sort(
@@ -194,7 +215,7 @@ async function mapPostsToFeedPosts(
       media,
       caption: post.caption,
       createdAt: formatPostDate(post.created_at),
-      likesCount: 0,
+      likesCount: likesCountMap.get(post.id) ?? 0,
       commentsCount: 0,
       relatedMotorcycleName: "",
       relatedMotorcycleId: post.motorcycle_id ?? undefined,

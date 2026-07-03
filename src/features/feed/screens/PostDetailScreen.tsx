@@ -8,12 +8,14 @@ import {
 } from "lucide-react-native";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Pressable,
   StyleSheet,
   View,
 } from "react-native";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/src/features/auth/hooks/useAuth";
 
 import {
   AppButton,
@@ -23,6 +25,11 @@ import {
 } from "@/src/shared/components";
 import { getPostById } from "@/src/features/feed/repositories/post.repository";
 import { getMotorcycleById } from "@/src/features/garage/repositories/motorcycle.repository";
+import {
+  getPostInteractionState,
+  togglePostLike,
+  togglePostSave,
+} from "@/src/features/feed/repositories/postInteraction.repository";
 import type { FeedPost } from "@/src/shared/types/app.types";
 import type { MotorcycleRow } from "@/src/shared/types/database.types";
 import { radius, spacing, theme } from "@/src/shared/theme";
@@ -30,12 +37,18 @@ import { PostMediaCarousel } from "@/src/features/feed/components/PostMediaCarou
 
 export function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { user } = useAuth();
 
   const [post, setPost] = useState<FeedPost | null>(null);
   const [relatedMotorcycle, setRelatedMotorcycle] =
     useState<MotorcycleRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [liked, setLiked] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [updatingLike, setUpdatingLike] = useState(false);
+  const [updatingSave, setUpdatingSave] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -67,9 +80,23 @@ export function PostDetailScreen() {
           ? await getMotorcycleById(postData.relatedMotorcycleId)
           : null;
 
+        const interactionState = user
+          ? await getPostInteractionState({
+              postId: postData.id,
+              userId: user.id,
+            })
+          : {
+              liked: false,
+              saved: false,
+              likesCount: postData.likesCount,
+            };
+
         if (isMounted) {
           setPost(postData);
           setRelatedMotorcycle(motorcycleData);
+          setLiked(interactionState.liked);
+          setSaved(interactionState.saved);
+          setLikesCount(interactionState.likesCount);
         }
       } catch (error) {
         const message =
@@ -92,7 +119,86 @@ export function PostDetailScreen() {
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [id, user]);
+
+  async function handleToggleLike() {
+    if (!post) {
+      return;
+    }
+
+    if (!user) {
+      Alert.alert(
+        "Sesi tidak aktif",
+        "Silakan masuk kembali untuk menyukai post.",
+      );
+      router.replace("/(auth)/login");
+      return;
+    }
+
+    try {
+      setUpdatingLike(true);
+
+      const nextLiked = await togglePostLike({
+        postId: post.id,
+        userId: user.id,
+        currentlyLiked: liked,
+      });
+
+      setLiked(nextLiked);
+      setLikesCount((current) => {
+        if (nextLiked) {
+          return current + 1;
+        }
+
+        return Math.max(current - 1, 0);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat memperbarui like.";
+
+      Alert.alert("Gagal memperbarui like", message);
+    } finally {
+      setUpdatingLike(false);
+    }
+  }
+
+  async function handleToggleSave() {
+    if (!post) {
+      return;
+    }
+
+    if (!user) {
+      Alert.alert(
+        "Sesi tidak aktif",
+        "Silakan masuk kembali untuk menyimpan post.",
+      );
+      router.replace("/(auth)/login");
+      return;
+    }
+
+    try {
+      setUpdatingSave(true);
+
+      const nextSaved = await togglePostSave({
+        postId: post.id,
+        userId: user.id,
+        currentlySaved: saved,
+      });
+
+      setSaved(nextSaved);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat menyimpan post.";
+
+      Alert.alert("Gagal menyimpan post", message);
+    } finally {
+      setUpdatingSave(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -154,8 +260,19 @@ export function PostDetailScreen() {
 
         <View style={styles.actionRow}>
           <View style={styles.leftActions}>
-            <Pressable style={styles.actionButton}>
-              <Heart size={21} color={theme.textPrimary} />
+            <Pressable
+              style={[
+                styles.actionButton,
+                updatingLike && styles.disabledAction,
+              ]}
+              disabled={updatingLike}
+              onPress={handleToggleLike}
+            >
+              <Heart
+                size={21}
+                color={liked ? theme.primary : theme.textPrimary}
+                fill={liked ? theme.primary : "transparent"}
+              />
             </Pressable>
 
             <Pressable style={styles.actionButton}>
@@ -167,14 +284,22 @@ export function PostDetailScreen() {
             </Pressable>
           </View>
 
-          <Pressable style={styles.actionButton}>
-            <Bookmark size={21} color={theme.textPrimary} />
+          <Pressable
+            style={[styles.actionButton, updatingSave && styles.disabledAction]}
+            disabled={updatingSave}
+            onPress={handleToggleSave}
+          >
+            <Bookmark
+              size={21}
+              color={saved ? theme.primary : theme.textPrimary}
+              fill={saved ? theme.primary : "transparent"}
+            />
           </Pressable>
         </View>
 
         <View style={styles.metricsRow}>
           <AppText variant="caption" tone="secondary">
-            {post.likesCount} likes
+            {likesCount} likes
           </AppText>
 
           <AppText variant="caption" tone="secondary">
@@ -313,5 +438,8 @@ const styles = StyleSheet.create({
   centerText: {
     maxWidth: 280,
     textAlign: "center",
+  },
+  disabledAction: {
+    opacity: 0.55,
   },
 });
