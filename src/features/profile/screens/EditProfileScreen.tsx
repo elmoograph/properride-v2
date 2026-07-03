@@ -1,9 +1,11 @@
+import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { Camera, ChevronLeft, User } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   StyleSheet,
   View,
@@ -14,6 +16,10 @@ import {
   ensureProfileForUser,
   updateProfile,
 } from "@/src/features/profile/repositories/profile.repository";
+import {
+  createStorageImagePath,
+  uploadImageToStorage,
+} from "@/src/shared/lib/storage";
 import {
   AppButton,
   AppInput,
@@ -38,6 +44,10 @@ export function EditProfileScreen() {
   const [username, setUsername] = useState("");
   const [location, setLocation] = useState("");
   const [bio, setBio] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [selectedAvatarUri, setSelectedAvatarUri] = useState<string | null>(
+    null,
+  );
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -65,6 +75,8 @@ export function EditProfileScreen() {
             setUsername(profile.username);
             setLocation(profile.location ?? "");
             setBio(profile.bio ?? "");
+            setAvatarUrl(profile.avatar_url);
+            setSelectedAvatarUri(null);
           }
         } catch (error) {
           const message =
@@ -89,6 +101,53 @@ export function EditProfileScreen() {
       };
     }, [user]),
   );
+
+  async function handlePickAvatar() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert(
+        "Izin galeri dibutuhkan",
+        "Berikan izin akses galeri untuk mengganti foto profile.",
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.82,
+    });
+
+    if (result.canceled) {
+      return;
+    }
+
+    const selectedAsset = result.assets[0];
+
+    if (!selectedAsset?.uri) {
+      return;
+    }
+
+    setSelectedAvatarUri(selectedAsset.uri);
+  }
+
+  async function uploadAvatarIfSelected() {
+    if (!user || !selectedAvatarUri) {
+      return avatarUrl;
+    }
+
+    const path = createStorageImagePath({
+      userId: user.id,
+      folder: "avatars",
+    });
+
+    return uploadImageToStorage({
+      uri: selectedAvatarUri,
+      path,
+    });
+  }
 
   async function handleSaveProfile() {
     if (!user) {
@@ -124,9 +183,12 @@ export function EditProfileScreen() {
       setSaving(true);
       setUsernameError(null);
 
+      const uploadedAvatarUrl = await uploadAvatarIfSelected();
+
       await updateProfile(user.id, {
         full_name: trimmedFullName,
         username: normalizedUsername,
+        avatar_url: uploadedAvatarUrl,
         location: trimmedLocation || null,
         bio: trimmedBio || null,
       });
@@ -210,6 +272,42 @@ export function EditProfileScreen() {
       </View>
 
       <View style={styles.form}>
+        <View style={styles.avatarSection}>
+          <Pressable
+            onPress={handlePickAvatar}
+            style={({ pressed }) => [
+              styles.avatarPicker,
+              pressed && styles.pressed,
+            ]}
+          >
+            {selectedAvatarUri || avatarUrl ? (
+              <Image
+                source={{ uri: selectedAvatarUri ?? avatarUrl ?? "" }}
+                style={styles.avatarPreview}
+              />
+            ) : (
+              <View style={styles.avatarFallback}>
+                <User size={32} color={theme.textMuted} />
+              </View>
+            )}
+
+            <View style={styles.cameraBadge}>
+              <Camera size={15} color={theme.primary} />
+            </View>
+          </Pressable>
+
+          <View style={styles.avatarText}>
+            <AppText variant="bodyMedium">Foto Profile</AppText>
+            <AppText
+              variant="caption"
+              tone="secondary"
+              style={styles.avatarHelper}
+            >
+              Tap untuk memilih foto baru dari galeri.
+            </AppText>
+          </View>
+        </View>
+
         <AppInput
           label="Nama lengkap"
           placeholder="Contoh: Andi Pratama"
@@ -294,5 +392,61 @@ const styles = StyleSheet.create({
   centerText: {
     maxWidth: 280,
     textAlign: "center",
+  },
+  avatarSection: {
+    borderRadius: radius.xl,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    padding: spacing.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  avatarPicker: {
+    position: "relative",
+    width: 82,
+    height: 82,
+    borderRadius: radius.pill,
+  },
+  avatarPreview: {
+    width: 82,
+    height: 82,
+    borderRadius: radius.pill,
+    backgroundColor: theme.surfaceSoft,
+    borderWidth: 2,
+    borderColor: theme.border,
+  },
+  avatarFallback: {
+    width: 82,
+    height: 82,
+    borderRadius: radius.pill,
+    backgroundColor: theme.surfaceSoft,
+    borderWidth: 2,
+    borderColor: theme.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cameraBadge: {
+    position: "absolute",
+    right: 0,
+    bottom: 0,
+    width: 30,
+    height: 30,
+    borderRadius: radius.pill,
+    backgroundColor: theme.primarySoft,
+    borderWidth: 1,
+    borderColor: theme.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: {
+    flex: 1,
+  },
+  avatarHelper: {
+    marginTop: spacing.xs,
+  },
+  pressed: {
+    opacity: 0.82,
   },
 });
