@@ -208,6 +208,7 @@ export function ProfileScreen() {
             <ProfileMenuItem
               icon={<Settings size={18} color={theme.textPrimary} />}
               title="Pengaturan"
+              onPress={() => router.push("/settings")}
             />
 
             <ProfileMenuItem
