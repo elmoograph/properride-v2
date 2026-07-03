@@ -48,6 +48,9 @@ export function EditProfileScreen() {
   const [selectedAvatarUri, setSelectedAvatarUri] = useState<string | null>(
     null,
   );
+  const [selectedAvatarBase64, setSelectedAvatarBase64] = useState<
+    string | null
+  >(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -77,6 +80,7 @@ export function EditProfileScreen() {
             setBio(profile.bio ?? "");
             setAvatarUrl(profile.avatar_url);
             setSelectedAvatarUri(null);
+            setSelectedAvatarBase64(null);
           }
         } catch (error) {
           const message =
@@ -113,12 +117,28 @@ export function EditProfileScreen() {
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.82,
-    });
+    let result: ImagePicker.ImagePickerResult;
+
+    try {
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.72,
+        base64: false,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat memilih foto.";
+
+      Alert.alert(
+        "Gagal memilih foto",
+        `${message}\n\nCoba pilih foto dari galeri lokal atau download foto dari Google Photos terlebih dahulu.`,
+      );
+      return;
+    }
 
     if (result.canceled) {
       return;
@@ -127,10 +147,15 @@ export function EditProfileScreen() {
     const selectedAsset = result.assets[0];
 
     if (!selectedAsset?.uri) {
+      Alert.alert(
+        "Foto tidak terbaca",
+        "Coba pilih foto lain dari galeri lokal.",
+      );
       return;
     }
 
     setSelectedAvatarUri(selectedAsset.uri);
+    setSelectedAvatarBase64(null);
   }
 
   async function uploadAvatarIfSelected() {

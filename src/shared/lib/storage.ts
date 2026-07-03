@@ -1,5 +1,5 @@
 import { decode } from "base64-arraybuffer";
-import { File } from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 
 import { supabase } from "@/src/shared/lib/supabase";
 
@@ -8,21 +8,21 @@ const STORAGE_BUCKET = "properride-media";
 type UploadImagePayload = {
   uri: string;
   path: string;
+  base64?: string | null;
 };
 
 export async function uploadImageToStorage({
   uri,
   path,
+  base64,
 }: UploadImagePayload): Promise<string> {
-  const file = new File(uri);
-  const base64 = await file.base64();
-
-  const fileExt = getFileExtension(file.name || uri);
+  const imageBase64 = base64 ?? (await readImageAsBase64(uri));
+  const fileExt = getFileExtension(path);
   const contentType = getImageContentType(fileExt);
 
   const { error } = await supabase.storage
     .from(STORAGE_BUCKET)
-    .upload(path, decode(base64), {
+    .upload(path, decode(imageBase64), {
       contentType,
       upsert: false,
     });
@@ -54,6 +54,18 @@ export function createStorageImagePath({
   }
 
   return `${userId}/${folder}/${safeFileName}`;
+}
+
+async function readImageAsBase64(uri: string) {
+  try {
+    return await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+  } catch {
+    throw new Error(
+      "Gagal membaca file gambar dari perangkat. Coba pilih gambar lain atau buka ulang aplikasi.",
+    );
+  }
 }
 
 function getFileExtension(value: string) {
