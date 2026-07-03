@@ -14,11 +14,29 @@ import { PostMediaCarousel } from "./PostMediaCarousel";
 
 type FeedPostProps = {
   post: FeedPostType;
+  liked?: boolean;
+  saved?: boolean;
+  updatingLike?: boolean;
+  updatingSave?: boolean;
+  likesCount?: number;
   onPress?: () => void;
   onPressMotorcycle?: () => void;
+  onToggleLike?: () => void;
+  onToggleSave?: () => void;
 };
 
-export function FeedPost({ post, onPress, onPressMotorcycle }: FeedPostProps) {
+export function FeedPost({
+  post,
+  liked = false,
+  saved = false,
+  updatingLike = false,
+  updatingSave = false,
+  likesCount = post.likesCount,
+  onPress,
+  onPressMotorcycle,
+  onToggleLike,
+  onToggleSave,
+}: FeedPostProps) {
   const hasRelatedMotorcycle = Boolean(post.relatedMotorcycleId);
 
   return (
@@ -59,8 +77,20 @@ export function FeedPost({ post, onPress, onPressMotorcycle }: FeedPostProps) {
       <View style={styles.content}>
         <View style={styles.actions}>
           <View style={styles.leftActions}>
-            <Pressable style={styles.actionButton} hitSlop={10}>
-              <Heart size={22} color={theme.textPrimary} />
+            <Pressable
+              style={[
+                styles.actionButton,
+                updatingLike && styles.disabledAction,
+              ]}
+              hitSlop={10}
+              disabled={updatingLike}
+              onPress={onToggleLike}
+            >
+              <Heart
+                size={22}
+                color={liked ? theme.primary : theme.textPrimary}
+                fill={liked ? theme.primary : "transparent"}
+              />
             </Pressable>
 
             <Pressable style={styles.actionButton} hitSlop={10}>
@@ -68,13 +98,22 @@ export function FeedPost({ post, onPress, onPressMotorcycle }: FeedPostProps) {
             </Pressable>
           </View>
 
-          <Pressable style={styles.actionButton} hitSlop={10}>
-            <Bookmark size={22} color={theme.textPrimary} />
+          <Pressable
+            style={[styles.actionButton, updatingSave && styles.disabledAction]}
+            hitSlop={10}
+            disabled={updatingSave}
+            onPress={onToggleSave}
+          >
+            <Bookmark
+              size={22}
+              color={saved ? theme.primary : theme.textPrimary}
+              fill={saved ? theme.primary : "transparent"}
+            />
           </Pressable>
         </View>
 
         <Pressable onPress={onPress}>
-          <AppText variant="bodyMedium">{post.likesCount} suka</AppText>
+          <AppText variant="bodyMedium">{likesCount} suka</AppText>
 
           <AppText style={styles.caption} numberOfLines={2}>
             <AppText variant="bodyMedium">{post.builderName} </AppText>
@@ -162,5 +201,8 @@ const styles = StyleSheet.create({
   },
   createdAt: {
     marginTop: spacing.xs,
+  },
+  disabledAction: {
+    opacity: 0.55,
   },
 });

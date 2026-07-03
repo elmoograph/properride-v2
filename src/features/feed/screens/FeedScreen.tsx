@@ -1,7 +1,14 @@
 import { router, useFocusEffect } from "expo-router";
 import { Search, Bell } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { useAuth } from "@/src/features/auth/hooks/useAuth";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
 
 import type { FeedCategory } from "@/src/shared/constants/feedCategories";
 import { spacing, theme } from "@/src/shared/theme";
@@ -10,13 +17,27 @@ import { FeedPost } from "@/src/features/feed/components/FeedPost";
 
 import { AppButton, AppScreen, AppText } from "@/src/shared/components";
 import { listPublicFeedPosts } from "@/src/features/feed/repositories/post.repository";
+import {
+  getPostInteractionState,
+  togglePostLike,
+  togglePostSave,
+  type PostInteractionState,
+} from "@/src/features/feed/repositories/postInteraction.repository";
 import type { FeedPost as FeedPostType } from "@/src/shared/types/app.types";
 
+type FeedInteractionMap = Record<string, PostInteractionState>;
+
+type FeedUpdatingMap = Record<string, boolean>;
+
 export function FeedScreen() {
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<FeedCategory>("All");
   const [posts, setPosts] = useState<FeedPostType[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [postError, setPostError] = useState<string | null>(null);
+  const [interactionMap, setInteractionMap] = useState<FeedInteractionMap>({});
+  const [updatingLikeMap, setUpdatingLikeMap] = useState<FeedUpdatingMap>({});
+  const [updatingSaveMap, setUpdatingSaveMap] = useState<FeedUpdatingMap>({});
 
   useFocusEffect(
     useCallback(() => {
@@ -28,9 +49,24 @@ export function FeedScreen() {
           setPostError(null);
 
           const data = await listPublicFeedPosts();
+          const interactions = user
+            ? await Promise.all(
+                data.map(async (post) => {
+                  const state = await getPostInteractionState({
+                    postId: post.id,
+                    userId: user.id,
+                  });
+
+                  return [post.id, state] as const;
+                }),
+              )
+            : [];
+
+          const nextInteractionMap = Object.fromEntries(interactions);
 
           if (isActive) {
             setPosts(data);
+            setInteractionMap(nextInteractionMap);
           }
         } catch (error) {
           const message =
@@ -53,7 +89,7 @@ export function FeedScreen() {
       return () => {
         isActive = false;
       };
-    }, []),
+    }, [user]),
   );
 
   const filteredPosts = useMemo(() => {
@@ -63,6 +99,117 @@ export function FeedScreen() {
 
     return posts.filter((post) => post.category === selectedCategory);
   }, [posts, selectedCategory]);
+
+  async function handleToggleLike(post: FeedPostType) {
+    if (!user) {
+      Alert.alert(
+        "Sesi tidak aktif",
+        "Silakan masuk kembali untuk menyukai post.",
+      );
+      router.replace("/(auth)/login");
+      return;
+    }
+
+    const currentInteraction = interactionMap[post.id] ?? {
+      liked: false,
+      saved: false,
+      likesCount: post.likesCount,
+    };
+
+    try {
+      setUpdatingLikeMap((current) => ({
+        ...current,
+        [post.id]: true,
+      }));
+
+      const nextLiked = await togglePostLike({
+        postId: post.id,
+        userId: user.id,
+        currentlyLiked: currentInteraction.liked,
+      });
+
+      setInteractionMap((current) => {
+        const previous = current[post.id] ?? currentInteraction;
+
+        return {
+          ...current,
+          [post.id]: {
+            ...previous,
+            liked: nextLiked,
+            likesCount: nextLiked
+              ? previous.likesCount + 1
+              : Math.max(previous.likesCount - 1, 0),
+          },
+        };
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat memperbarui like.";
+
+      Alert.alert("Gagal memperbarui like", message);
+    } finally {
+      setUpdatingLikeMap((current) => ({
+        ...current,
+        [post.id]: false,
+      }));
+    }
+  }
+
+  async function handleToggleSave(post: FeedPostType) {
+    if (!user) {
+      Alert.alert(
+        "Sesi tidak aktif",
+        "Silakan masuk kembali untuk menyimpan post.",
+      );
+      router.replace("/(auth)/login");
+      return;
+    }
+
+    const currentInteraction = interactionMap[post.id] ?? {
+      liked: false,
+      saved: false,
+      likesCount: post.likesCount,
+    };
+
+    try {
+      setUpdatingSaveMap((current) => ({
+        ...current,
+        [post.id]: true,
+      }));
+
+      const nextSaved = await togglePostSave({
+        postId: post.id,
+        userId: user.id,
+        currentlySaved: currentInteraction.saved,
+      });
+
+      setInteractionMap((current) => {
+        const previous = current[post.id] ?? currentInteraction;
+
+        return {
+          ...current,
+          [post.id]: {
+            ...previous,
+            saved: nextSaved,
+          },
+        };
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat menyimpan post.";
+
+      Alert.alert("Gagal menyimpan post", message);
+    } finally {
+      setUpdatingSaveMap((current) => ({
+        ...current,
+        [post.id]: false,
+      }));
+    }
+  }
 
   return (
     <AppScreen scrollable>
@@ -122,18 +269,29 @@ export function FeedScreen() {
 
       {!loadingPosts && !postError && filteredPosts.length > 0 ? (
         <View style={styles.feedList}>
-          {filteredPosts.map((post) => (
-            <FeedPost
-              key={post.id}
-              post={post}
-              onPress={() => router.push(`/post/${post.id}`)}
-              onPressMotorcycle={() => {
-                if (post.relatedMotorcycleId) {
-                  router.push(`/motorcycle/${post.relatedMotorcycleId}`);
-                }
-              }}
-            />
-          ))}
+          {filteredPosts.map((post) => {
+            const interaction = interactionMap[post.id];
+
+            return (
+              <FeedPost
+                key={post.id}
+                post={post}
+                liked={interaction?.liked ?? false}
+                saved={interaction?.saved ?? false}
+                likesCount={interaction?.likesCount ?? post.likesCount}
+                updatingLike={updatingLikeMap[post.id] ?? false}
+                updatingSave={updatingSaveMap[post.id] ?? false}
+                onToggleLike={() => handleToggleLike(post)}
+                onToggleSave={() => handleToggleSave(post)}
+                onPress={() => router.push(`/post/${post.id}`)}
+                onPressMotorcycle={() => {
+                  if (post.relatedMotorcycleId) {
+                    router.push(`/motorcycle/${post.relatedMotorcycleId}`);
+                  }
+                }}
+              />
+            );
+          })}
         </View>
       ) : null}
     </AppScreen>
