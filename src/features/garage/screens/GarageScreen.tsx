@@ -1,6 +1,6 @@
-import { router } from "expo-router";
-import { ChevronRight, Plus } from "lucide-react-native";
-import { useEffect, useMemo, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { Plus } from "lucide-react-native";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -65,50 +65,52 @@ export function GarageScreen() {
       ? `${motorcycleCards[0].brand} ${motorcycleCards[0].model}`
       : "Belum ada motor");
 
-  useEffect(() => {
-    let isMounted = true;
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
 
-    async function loadGarageData() {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setErrorMessage(null);
-
-        const [profileData, motorcycleData] = await Promise.all([
-          getProfileById(user.id),
-          listMotorcyclesByUserId(user.id),
-        ]);
-
-        if (isMounted) {
-          setProfile(profileData);
-          setMotorcycles(motorcycleData);
-        }
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Terjadi kesalahan saat memuat Garage.";
-
-        if (isMounted) {
-          setErrorMessage(message);
-        }
-      } finally {
-        if (isMounted) {
+      async function loadGarageData() {
+        if (!user) {
           setLoading(false);
+          return;
+        }
+
+        try {
+          setLoading(true);
+          setErrorMessage(null);
+
+          const [profileData, motorcycleData] = await Promise.all([
+            getProfileById(user.id),
+            listMotorcyclesByUserId(user.id),
+          ]);
+
+          if (isActive) {
+            setProfile(profileData);
+            setMotorcycles(motorcycleData);
+          }
+        } catch (error) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "Terjadi kesalahan saat memuat Garage.";
+
+          if (isActive) {
+            setErrorMessage(message);
+          }
+        } finally {
+          if (isActive) {
+            setLoading(false);
+          }
         }
       }
-    }
 
-    loadGarageData();
+      loadGarageData();
 
-    return () => {
-      isMounted = false;
-    };
-  }, [user]);
+      return () => {
+        isActive = false;
+      };
+    }, [user]),
+  );
 
   if (loading) {
     return (
@@ -160,6 +162,7 @@ export function GarageScreen() {
       <GarageHeader
         garageName={profile?.garage_name ?? "ProperRide Garage"}
         builderName={profile?.full_name ?? user.email ?? "ProperRide Rider"}
+        onPressEdit={() => router.push("/edit-garage")}
       />
 
       <View style={styles.section}>

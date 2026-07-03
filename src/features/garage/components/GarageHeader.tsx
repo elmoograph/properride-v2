@@ -7,12 +7,17 @@ import { radius, spacing, theme } from "@/src/shared/theme";
 type GarageHeaderProps = {
   garageName: string;
   builderName: string;
+  onPressEdit?: () => void;
 };
 
 const heroImageUrl =
   "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=1200";
 
-export function GarageHeader({ garageName, builderName }: GarageHeaderProps) {
+export function GarageHeader({
+  garageName,
+  builderName,
+  onPressEdit,
+}: GarageHeaderProps) {
   return (
     <View style={styles.container}>
       <Image source={{ uri: heroImageUrl }} style={styles.heroImage} />
@@ -36,6 +41,7 @@ export function GarageHeader({ garageName, builderName }: GarageHeaderProps) {
         </View>
 
         <Pressable
+          onPress={onPressEdit}
           style={({ pressed }) => [
             styles.editButton,
             pressed && styles.pressed,
