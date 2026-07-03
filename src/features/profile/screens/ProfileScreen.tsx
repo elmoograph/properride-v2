@@ -201,6 +201,7 @@ export function ProfileScreen() {
             <ProfileMenuItem
               icon={<Activity size={18} color={theme.textPrimary} />}
               title="Aktivitas"
+              onPress={() => router.push("/activity")}
             />
 
             <ProfileMenuItem

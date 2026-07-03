@@ -171,6 +171,47 @@ export async function listSavedPostsByUserId(
     .filter((post): post is FeedPost => Boolean(post));
 }
 
+export async function listLikedPostsByUserId(
+  userId: string,
+): Promise<FeedPost[]> {
+  const { data: likedRows, error: likedError } = await supabase
+    .from("post_likes")
+    .select("post_id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (likedError) {
+    throw likedError;
+  }
+
+  const postIds = likedRows.map((row) => row.post_id);
+
+  if (postIds.length === 0) {
+    return [];
+  }
+
+  const { data: posts, error: postsError } = await supabase
+    .from("posts")
+    .select(
+      `
+      *,
+      post_media (*)
+    `,
+    )
+    .in("id", postIds)
+    .neq("status", "deleted");
+
+  if (postsError) {
+    throw postsError;
+  }
+
+  const mappedPosts = await mapPostsToFeedPosts(posts);
+
+  return postIds
+    .map((postId) => mappedPosts.find((post) => post.id === postId))
+    .filter((post): post is FeedPost => Boolean(post));
+}
+
 export async function getPostById(id: string): Promise<FeedPost | null> {
   const { data: post, error } = await supabase
     .from("posts")
