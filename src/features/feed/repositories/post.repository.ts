@@ -122,6 +122,32 @@ export async function listPostsByUserId(userId: string): Promise<FeedPost[]> {
   return mapPostsToFeedPosts(posts);
 }
 
+export async function getPostById(id: string): Promise<FeedPost | null> {
+  const { data: post, error } = await supabase
+    .from("posts")
+    .select(
+      `
+      *,
+      post_media (*)
+    `,
+    )
+    .eq("id", id)
+    .neq("status", "deleted")
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!post) {
+    return null;
+  }
+
+  const mappedPosts = await mapPostsToFeedPosts([post]);
+
+  return mappedPosts[0] ?? null;
+}
+
 async function mapPostsToFeedPosts(
   posts: PostWithMedia[],
 ): Promise<FeedPost[]> {

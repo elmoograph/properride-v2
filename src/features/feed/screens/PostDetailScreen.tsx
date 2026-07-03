@@ -6,7 +6,14 @@ import {
   MessageCircle,
   Share2,
 } from "lucide-react-native";
-import { Image, Pressable, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
+import { useEffect, useState } from "react";
 
 import {
   AppButton,
@@ -14,18 +21,107 @@ import {
   AppScreen,
   AppText,
 } from "@/src/shared/components";
-import { feedPosts, motorcycles } from "@/src/shared/constants/mockData";
+import { getPostById } from "@/src/features/feed/repositories/post.repository";
+import { getMotorcycleById } from "@/src/features/garage/repositories/motorcycle.repository";
+import type { FeedPost } from "@/src/shared/types/app.types";
+import type { MotorcycleRow } from "@/src/shared/types/database.types";
 import { radius, spacing, theme } from "@/src/shared/theme";
 import { PostMediaCarousel } from "@/src/features/feed/components/PostMediaCarousel";
 
 export function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const post = feedPosts.find((item) => item.id === id) ?? feedPosts[0];
+  const [post, setPost] = useState<FeedPost | null>(null);
+  const [relatedMotorcycle, setRelatedMotorcycle] =
+    useState<MotorcycleRow | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const relatedMotorcycle = motorcycles.find(
-    (motorcycle) => motorcycle.id === post.relatedMotorcycleId,
-  );
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPostDetail() {
+      if (!id) {
+        setLoading(false);
+        setErrorMessage("Post tidak ditemukan.");
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setErrorMessage(null);
+
+        const postData = await getPostById(id);
+
+        if (!postData) {
+          if (isMounted) {
+            setPost(null);
+            setRelatedMotorcycle(null);
+            setErrorMessage("Post tidak ditemukan atau sudah dihapus.");
+          }
+
+          return;
+        }
+
+        const motorcycleData = postData.relatedMotorcycleId
+          ? await getMotorcycleById(postData.relatedMotorcycleId)
+          : null;
+
+        if (isMounted) {
+          setPost(postData);
+          setRelatedMotorcycle(motorcycleData);
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan saat memuat post.";
+
+        if (isMounted) {
+          setErrorMessage(message);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadPostDetail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <AppScreen>
+        <View style={styles.centerState}>
+          <ActivityIndicator color={theme.primary} />
+          <AppText tone="secondary" style={styles.centerText}>
+            Memuat detail post...
+          </AppText>
+        </View>
+      </AppScreen>
+    );
+  }
+
+  if (errorMessage || !post) {
+    return (
+      <AppScreen>
+        <View style={styles.centerState}>
+          <AppText variant="title">Post belum tersedia</AppText>
+          <AppText tone="secondary" style={styles.centerText}>
+            {errorMessage ?? "Data post belum tersedia."}
+          </AppText>
+          <AppButton onPress={() => router.replace("/(tabs)/feed")}>
+            Kembali ke Feed
+          </AppButton>
+        </View>
+      </AppScreen>
+    );
+  }
 
   return (
     <AppScreen scrollable padded={false}>
@@ -104,7 +200,11 @@ export function PostDetailScreen() {
                 tone="muted"
                 style={styles.motorcycleMeta}
               >
-                {relatedMotorcycle.year} · {relatedMotorcycle.engineInfo}
+                {relatedMotorcycle.year} ·{" "}
+                {relatedMotorcycle.engine_info ??
+                  (relatedMotorcycle.engine_cc
+                    ? `${relatedMotorcycle.engine_cc} cc`
+                    : "Mesin belum diisi")}
               </AppText>
             </View>
 
@@ -203,5 +303,15 @@ const styles = StyleSheet.create({
   },
   motorcycleButton: {
     alignSelf: "flex-start",
+  },
+  centerState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.md,
+  },
+  centerText: {
+    maxWidth: 280,
+    textAlign: "center",
   },
 });
