@@ -30,7 +30,7 @@ export type CreatePostPayload = {
   mediaUrls?: string[];
 };
 
-export async function createPostWithPlaceholderMedia({
+export async function createPostWithMedia({
   userId,
   motorcycleId = null,
   caption,

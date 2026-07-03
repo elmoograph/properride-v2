@@ -13,7 +13,7 @@ import {
 
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { listMotorcyclesByUserId } from "@/src/features/garage/repositories/motorcycle.repository";
-import { createPostWithPlaceholderMedia } from "@/src/features/feed/repositories/post.repository";
+import { createPostWithMedia } from "@/src/features/feed/repositories/post.repository";
 import { ensureProfileForUser } from "@/src/features/profile/repositories/profile.repository";
 import type { MotorcycleRow } from "@/src/shared/types/database.types";
 import type { MotorcycleSelectCardData } from "@/src/features/create/components/MotorcycleSelectCard";
@@ -235,7 +235,7 @@ export function CreatePostScreen() {
 
       const uploadedMediaUrls = await uploadSelectedPostMedia();
 
-      await createPostWithPlaceholderMedia({
+      await createPostWithMedia({
         userId: user.id,
         motorcycleId: selectedMotorcycleId,
         caption: caption.trim(),

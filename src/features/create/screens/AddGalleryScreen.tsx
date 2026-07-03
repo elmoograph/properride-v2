@@ -14,7 +14,7 @@ import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { createMotorcycleGalleryItem } from "@/src/features/garage/repositories/motorcycleGallery.repository";
 
 import { getMotorcycleById } from "@/src/features/garage/repositories/motorcycle.repository";
-import { createPostWithPlaceholderMedia } from "@/src/features/feed/repositories/post.repository";
+import { createPostWithMedia } from "@/src/features/feed/repositories/post.repository";
 import {
   AppButton,
   AppCard,
@@ -293,7 +293,7 @@ export function AddGalleryScreen() {
         caption: galleryCaption.trim() || null,
       });
 
-      await createPostWithPlaceholderMedia({
+      await createPostWithMedia({
         userId: user.id,
         motorcycleId: motorcycle.id,
         caption: postCaption.trim(),
