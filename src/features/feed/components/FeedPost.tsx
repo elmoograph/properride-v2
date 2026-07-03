@@ -93,7 +93,11 @@ export function FeedPost({
               />
             </Pressable>
 
-            <Pressable style={styles.actionButton} hitSlop={10}>
+            <Pressable
+              style={styles.actionButton}
+              hitSlop={10}
+              onPress={onPress}
+            >
               <MessageCircle size={22} color={theme.textPrimary} />
             </Pressable>
           </View>
@@ -113,7 +117,13 @@ export function FeedPost({
         </View>
 
         <Pressable onPress={onPress}>
-          <AppText variant="bodyMedium">{likesCount} suka</AppText>
+          <View style={styles.metricsRow}>
+            <AppText variant="bodyMedium">{likesCount} suka</AppText>
+
+            <AppText variant="caption" tone="secondary">
+              {post.commentsCount} komentar
+            </AppText>
+          </View>
 
           <AppText style={styles.caption} numberOfLines={2}>
             <AppText variant="bodyMedium">{post.builderName} </AppText>
@@ -204,5 +214,10 @@ const styles = StyleSheet.create({
   },
   disabledAction: {
     opacity: 0.55,
+  },
+  metricsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
   },
 });

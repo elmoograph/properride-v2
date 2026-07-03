@@ -25,6 +25,10 @@ type PostLikesCountRow = {
   post_id: string;
 };
 
+type PostCommentsCountRow = {
+  post_id: string;
+};
+
 export type CreatePostPayload = {
   userId: string;
   motorcycleId?: string | null;
@@ -232,6 +236,24 @@ async function mapPostsToFeedPosts(
     likesCountMap.set(row.post_id, (likesCountMap.get(row.post_id) ?? 0) + 1);
   });
 
+  const { data: commentsRows, error: commentsError } = await supabase
+    .from("comments")
+    .select("post_id")
+    .in("post_id", postIds);
+
+  if (commentsError) {
+    throw commentsError;
+  }
+
+  const commentsCountMap = new Map<string, number>();
+
+  (commentsRows as PostCommentsCountRow[]).forEach((row) => {
+    commentsCountMap.set(
+      row.post_id,
+      (commentsCountMap.get(row.post_id) ?? 0) + 1,
+    );
+  });
+
   return posts.map((post) => {
     const profile = profileMap.get(post.user_id);
     const sortedMedia = [...post.post_media].sort(
@@ -257,7 +279,7 @@ async function mapPostsToFeedPosts(
       caption: post.caption,
       createdAt: formatPostDate(post.created_at),
       likesCount: likesCountMap.get(post.id) ?? 0,
-      commentsCount: 0,
+      commentsCount: commentsCountMap.get(post.id) ?? 0,
       relatedMotorcycleName: "",
       relatedMotorcycleId: post.motorcycle_id ?? undefined,
       category: "Daily" satisfies MotorcycleType,

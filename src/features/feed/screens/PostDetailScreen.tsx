@@ -19,7 +19,7 @@ import { useAuth } from "@/src/features/auth/hooks/useAuth";
 
 import {
   AppButton,
-  AppCard,
+  AppInput,
   AppScreen,
   AppText,
 } from "@/src/shared/components";
@@ -30,6 +30,11 @@ import {
   togglePostLike,
   togglePostSave,
 } from "@/src/features/feed/repositories/postInteraction.repository";
+import {
+  createComment,
+  listCommentsByPostId,
+  type PostComment,
+} from "@/src/features/feed/repositories/comment.repository";
 import type { FeedPost } from "@/src/shared/types/app.types";
 import type { MotorcycleRow } from "@/src/shared/types/database.types";
 import { radius, spacing, theme } from "@/src/shared/theme";
@@ -49,6 +54,9 @@ export function PostDetailScreen() {
   const [likesCount, setLikesCount] = useState(0);
   const [updatingLike, setUpdatingLike] = useState(false);
   const [updatingSave, setUpdatingSave] = useState(false);
+  const [comments, setComments] = useState<PostComment[]>([]);
+  const [commentBody, setCommentBody] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -91,12 +99,15 @@ export function PostDetailScreen() {
               likesCount: postData.likesCount,
             };
 
+        const postComments = await listCommentsByPostId(postData.id);
+
         if (isMounted) {
           setPost(postData);
           setRelatedMotorcycle(motorcycleData);
           setLiked(interactionState.liked);
           setSaved(interactionState.saved);
           setLikesCount(interactionState.likesCount);
+          setComments(postComments);
         }
       } catch (error) {
         const message =
@@ -200,6 +211,52 @@ export function PostDetailScreen() {
     }
   }
 
+  async function handleSubmitComment() {
+    if (!post) {
+      return;
+    }
+
+    if (!user) {
+      Alert.alert(
+        "Sesi tidak aktif",
+        "Silakan masuk kembali untuk menulis komentar.",
+      );
+      router.replace("/(auth)/login");
+      return;
+    }
+
+    const trimmedBody = commentBody.trim();
+
+    if (!trimmedBody) {
+      Alert.alert("Komentar kosong", "Tulis komentar terlebih dahulu.");
+      return;
+    }
+
+    try {
+      setSubmittingComment(true);
+
+      await createComment({
+        postId: post.id,
+        userId: user.id,
+        body: trimmedBody,
+      });
+
+      const latestComments = await listCommentsByPostId(post.id);
+
+      setComments(latestComments);
+      setCommentBody("");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat mengirim komentar.";
+
+      Alert.alert("Gagal mengirim komentar", message);
+    } finally {
+      setSubmittingComment(false);
+    }
+  }
+
   if (loading) {
     return (
       <AppScreen>
@@ -247,15 +304,19 @@ export function PostDetailScreen() {
       <PostMediaCarousel post={post} />
 
       <View style={styles.content}>
-        <View style={styles.authorRow}>
-          <Image source={{ uri: post.avatarUrl }} style={styles.avatar} />
+        <View style={styles.postInfo}>
+          <View style={styles.authorRow}>
+            <Image source={{ uri: post.avatarUrl }} style={styles.avatar} />
 
-          <View style={styles.authorText}>
-            <AppText variant="bodyMedium">{post.builderName}</AppText>
-            <AppText variant="caption" tone="secondary">
-              {post.location}
-            </AppText>
+            <View style={styles.authorText}>
+              <AppText variant="bodyMedium">{post.builderName}</AppText>
+              <AppText variant="caption" tone="secondary">
+                {post.location} · {post.createdAt}
+              </AppText>
+            </View>
           </View>
+
+          <AppText style={styles.caption}>{post.caption}</AppText>
         </View>
 
         <View style={styles.actionRow}>
@@ -269,18 +330,18 @@ export function PostDetailScreen() {
               onPress={handleToggleLike}
             >
               <Heart
-                size={21}
+                size={22}
                 color={liked ? theme.primary : theme.textPrimary}
                 fill={liked ? theme.primary : "transparent"}
               />
             </Pressable>
 
             <Pressable style={styles.actionButton}>
-              <MessageCircle size={21} color={theme.textPrimary} />
+              <MessageCircle size={22} color={theme.textPrimary} />
             </Pressable>
 
             <Pressable style={styles.actionButton}>
-              <Share2 size={21} color={theme.textPrimary} />
+              <Share2 size={22} color={theme.textPrimary} />
             </Pressable>
           </View>
 
@@ -290,7 +351,7 @@ export function PostDetailScreen() {
             onPress={handleToggleSave}
           >
             <Bookmark
-              size={21}
+              size={22}
               color={saved ? theme.primary : theme.textPrimary}
               fill={saved ? theme.primary : "transparent"}
             />
@@ -298,53 +359,109 @@ export function PostDetailScreen() {
         </View>
 
         <View style={styles.metricsRow}>
+          <AppText variant="bodyMedium">{likesCount} likes</AppText>
           <AppText variant="caption" tone="secondary">
-            {likesCount} likes
-          </AppText>
-
-          <AppText variant="caption" tone="secondary">
-            {post.commentsCount} komentar
+            {comments.length} komentar
           </AppText>
         </View>
 
-        <AppText style={styles.caption}>{post.caption}</AppText>
-
         {relatedMotorcycle ? (
-          <AppCard style={styles.motorcycleCard}>
-            <View style={styles.motorcycleInfo}>
+          <Pressable
+            style={styles.relatedMotorcycleBar}
+            onPress={() => router.push(`/motorcycle/${relatedMotorcycle.id}`)}
+          >
+            <View style={styles.relatedMotorcycleText}>
               <AppText variant="caption" tone="secondary">
                 Related Motorcycle
               </AppText>
-
-              <AppText variant="bodyMedium" style={styles.motorcycleTitle}>
+              <AppText variant="bodyMedium" numberOfLines={1}>
                 {relatedMotorcycle.brand} {relatedMotorcycle.model}
-              </AppText>
-
-              <AppText
-                variant="caption"
-                tone="muted"
-                style={styles.motorcycleMeta}
-              >
-                {relatedMotorcycle.year} ·{" "}
-                {relatedMotorcycle.engine_info ??
-                  (relatedMotorcycle.engine_cc
-                    ? `${relatedMotorcycle.engine_cc} cc`
-                    : "Mesin belum diisi")}
               </AppText>
             </View>
 
-            <AppButton
-              variant="secondary"
-              style={styles.motorcycleButton}
-              onPress={() => router.push(`/motorcycle/${relatedMotorcycle.id}`)}
-            >
-              Lihat Motor
-            </AppButton>
-          </AppCard>
+            <AppText variant="caption" tone="muted">
+              Lihat
+            </AppText>
+          </Pressable>
         ) : null}
+
+        <View style={styles.commentsSection}>
+          <View style={styles.commentsHeader}>
+            <AppText variant="title">Komentar</AppText>
+            <AppText variant="caption" tone="muted">
+              {comments.length}
+            </AppText>
+          </View>
+
+          <View style={styles.commentComposer}>
+            <AppInput
+              label="Komentar"
+              placeholder="Tulis komentar..."
+              value={commentBody}
+              onChangeText={setCommentBody}
+              multiline
+              inputStyle={styles.commentInput}
+            />
+
+            <AppButton
+              onPress={handleSubmitComment}
+              disabled={submittingComment}
+            >
+              {submittingComment ? "Mengirim..." : "Kirim"}
+            </AppButton>
+          </View>
+
+          <View style={styles.commentList}>
+            {comments.length === 0 ? (
+              <View style={styles.emptyComments}>
+                <AppText variant="bodyMedium">Belum ada komentar</AppText>
+                <AppText
+                  variant="caption"
+                  tone="secondary"
+                  style={styles.emptyText}
+                >
+                  Jadilah yang pertama memberi komentar.
+                </AppText>
+              </View>
+            ) : (
+              comments.map((comment) => (
+                <View key={comment.id} style={styles.commentItem}>
+                  <View style={styles.commentAvatar}>
+                    <AppText variant="caption">
+                      {comment.author.fullName.charAt(0).toUpperCase()}
+                    </AppText>
+                  </View>
+
+                  <View style={styles.commentContent}>
+                    <View style={styles.commentMeta}>
+                      <AppText variant="bodyMedium" numberOfLines={1}>
+                        {comment.author.fullName}
+                      </AppText>
+
+                      <AppText variant="caption" tone="muted">
+                        {formatCommentDate(comment.created_at)}
+                      </AppText>
+                    </View>
+
+                    <AppText tone="secondary" style={styles.commentBody}>
+                      {comment.body}
+                    </AppText>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        </View>
       </View>
     </AppScreen>
   );
+}
+
+function formatCommentDate(value: string) {
+  return new Date(value).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+  });
 }
 
 const styles = StyleSheet.create({
@@ -371,7 +488,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.section,
   },
   authorRow: {
     flexDirection: "row",
@@ -388,7 +507,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   actionRow: {
-    marginTop: spacing.xl,
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.borderSoft,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -411,23 +533,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   caption: {
-    marginTop: spacing.md,
-  },
-  motorcycleCard: {
-    marginTop: spacing.section,
-    gap: spacing.lg,
-  },
-  motorcycleInfo: {
-    alignItems: "flex-start",
-  },
-  motorcycleTitle: {
-    marginTop: spacing.xs,
-  },
-  motorcycleMeta: {
-    marginTop: spacing.xs,
-  },
-  motorcycleButton: {
-    alignSelf: "flex-start",
+    lineHeight: 22,
   },
   centerState: {
     flex: 1,
@@ -441,5 +547,83 @@ const styles = StyleSheet.create({
   },
   disabledAction: {
     opacity: 0.55,
+  },
+  commentsSection: {
+    marginTop: spacing.section,
+    gap: spacing.md,
+  },
+  commentsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
+  commentComposer: {
+    gap: spacing.sm,
+  },
+  commentInput: {
+    minHeight: 72,
+  },
+  commentList: {
+    gap: spacing.md,
+  },
+  emptyComments: {
+    borderRadius: radius.lg,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    padding: spacing.lg,
+    alignItems: "center",
+  },
+  emptyText: {
+    marginTop: spacing.xs,
+    textAlign: "center",
+  },
+  commentItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.sm,
+  },
+  commentAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.pill,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  commentContent: {
+    flex: 1,
+  },
+  commentMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+  },
+  commentBody: {
+    marginTop: spacing.xs,
+    lineHeight: 20,
+  },
+  postInfo: {
+    gap: spacing.md,
+  },
+  relatedMotorcycleBar: {
+    marginTop: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    padding: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
+  relatedMotorcycleText: {
+    flex: 1,
+    gap: spacing.xs,
   },
 });
