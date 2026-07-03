@@ -190,6 +190,7 @@ export function ProfileScreen() {
             <ProfileMenuItem
               icon={<PenLine size={18} color={theme.textPrimary} />}
               title="Edit Profil"
+              onPress={() => router.push("/edit-profile")}
             />
 
             <ProfileMenuItem
