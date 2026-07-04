@@ -8,8 +8,6 @@ export type SignInWithEmailParams = {
 export type SignUpWithEmailParams = {
   email: string;
   password: string;
-  fullName: string;
-  username: string;
 };
 
 export async function getCurrentSession() {
@@ -51,21 +49,12 @@ export async function signInWithEmail({
 export async function signUpWithEmail({
   email,
   password,
-  fullName,
-  username,
 }: SignUpWithEmailParams) {
   const normalizedEmail = email.trim().toLowerCase();
-  const normalizedUsername = username.trim().toLowerCase();
 
   const { data, error } = await supabase.auth.signUp({
     email: normalizedEmail,
     password,
-    options: {
-      data: {
-        full_name: fullName.trim(),
-        username: normalizedUsername,
-      },
-    },
   });
 
   if (error) {
