@@ -111,3 +111,7 @@ export async function updateProfile(
 
   return data;
 }
+
+export function isProfileComplete(profile: ProfileRow | null) {
+  return Boolean(profile?.full_name?.trim() && profile?.username?.trim());
+}
