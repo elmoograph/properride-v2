@@ -309,7 +309,7 @@ async function mapPostsToFeedPosts(
     return {
       id: post.id,
       userId: post.user_id,
-      builderName: profile?.full_name ?? "ProperRide User",
+      builderName: profile?.username ?? "properride.builder",
       avatarUrl: profile?.avatar_url ?? null,
       location: profile?.location ?? "Indonesia",
       imageUrl: firstImageUrl,

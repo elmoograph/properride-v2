@@ -444,7 +444,7 @@ export function PostDetailScreen() {
                   <View style={styles.commentContent}>
                     <View style={styles.commentMeta}>
                       <AppText variant="bodyMedium" numberOfLines={1}>
-                        {comment.author.fullName}
+                        {comment.author.username}
                       </AppText>
 
                       <AppText variant="caption" tone="muted">
