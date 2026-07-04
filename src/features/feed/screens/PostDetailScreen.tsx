@@ -244,6 +244,16 @@ export function PostDetailScreen() {
       const latestComments = await listCommentsByPostId(post.id);
 
       setComments(latestComments);
+      setPost((currentPost) => {
+        if (!currentPost) {
+          return currentPost;
+        }
+
+        return {
+          ...currentPost,
+          commentsCount: latestComments.length,
+        };
+      });
       setCommentBody("");
     } catch (error) {
       const message =
@@ -361,7 +371,7 @@ export function PostDetailScreen() {
         <View style={styles.metricsRow}>
           <AppText variant="bodyMedium">{likesCount} likes</AppText>
           <AppText variant="caption" tone="secondary">
-            {comments.length} komentar
+            {post.commentsCount} komentar
           </AppText>
         </View>
 
