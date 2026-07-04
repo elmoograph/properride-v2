@@ -6,3 +6,4 @@ export * from "./AppChip";
 export * from "./AppInput";
 export * from "./ImageUploadBox";
 export * from "./AppSelect";
+export * from "./AppAvatar";

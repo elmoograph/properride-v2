@@ -14,9 +14,6 @@ import type {
 const TEMP_POST_IMAGE_URL =
   "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=1200";
 
-const DEFAULT_AVATAR_URL =
-  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=400";
-
 type PostWithMedia = PostRow & {
   post_media: PostMediaRow[];
 };
@@ -313,7 +310,7 @@ async function mapPostsToFeedPosts(
       id: post.id,
       userId: post.user_id,
       builderName: profile?.full_name ?? "ProperRide User",
-      avatarUrl: profile?.avatar_url ?? DEFAULT_AVATAR_URL,
+      avatarUrl: profile?.avatar_url ?? null,
       location: profile?.location ?? "Indonesia",
       imageUrl: firstImageUrl,
       media,

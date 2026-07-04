@@ -9,7 +9,6 @@ import {
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Pressable,
   StyleSheet,
   View,
@@ -18,6 +17,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 
 import {
+  AppAvatar,
   AppButton,
   AppInput,
   AppScreen,
@@ -306,7 +306,7 @@ export function PostDetailScreen() {
       <View style={styles.content}>
         <View style={styles.postInfo}>
           <View style={styles.authorRow}>
-            <Image source={{ uri: post.avatarUrl }} style={styles.avatar} />
+            <AppAvatar uri={post.avatarUrl} size="lg" />
 
             <View style={styles.authorText}>
               <AppText variant="bodyMedium">{post.builderName}</AppText>
@@ -426,11 +426,7 @@ export function PostDetailScreen() {
             ) : (
               comments.map((comment) => (
                 <View key={comment.id} style={styles.commentItem}>
-                  <View style={styles.commentAvatar}>
-                    <AppText variant="caption">
-                      {comment.author.fullName.charAt(0).toUpperCase()}
-                    </AppText>
-                  </View>
+                  <AppAvatar uri={comment.author.avatarUrl} size="sm" />
 
                   <View style={styles.commentContent}>
                     <View style={styles.commentMeta}>
@@ -496,12 +492,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.pill,
-    backgroundColor: theme.surfaceSoft,
   },
   authorText: {
     flex: 1,
@@ -583,16 +573,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: spacing.sm,
-  },
-  commentAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.pill,
-    backgroundColor: theme.surface,
-    borderWidth: 1,
-    borderColor: theme.borderSoft,
-    alignItems: "center",
-    justifyContent: "center",
   },
   commentContent: {
     flex: 1,

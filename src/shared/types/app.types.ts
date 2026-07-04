@@ -17,7 +17,7 @@ export type FeedPost = {
   id: string;
   userId: string;
   builderName: string;
-  avatarUrl: string;
+  avatarUrl: string | null;
   location: string;
   imageUrl: string;
   media?: PostMedia[];

@@ -5,9 +5,9 @@ import {
   MessageCircle,
   MoreHorizontal,
 } from "lucide-react-native";
-import { Image, Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
-import { AppText } from "@/src/shared/components";
+import { AppAvatar, AppText } from "@/src/shared/components";
 import { radius, spacing, theme } from "@/src/shared/theme";
 import type { FeedPost as FeedPostType } from "@/src/shared/types/app.types";
 import { PostMediaCarousel } from "./PostMediaCarousel";
@@ -43,7 +43,7 @@ export function FeedPost({
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.builderInfo}>
-          <Image source={{ uri: post.avatarUrl }} style={styles.avatar} />
+          <AppAvatar uri={post.avatarUrl} size="md" />
 
           <View style={styles.builderText}>
             <AppText variant="bodyMedium" numberOfLines={1}>
@@ -158,12 +158,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.sm,
     flex: 1,
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.pill,
-    backgroundColor: theme.surfaceSoft,
   },
   builderText: {
     flex: 1,
