@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import {
+  Bike,
   Bookmark,
   ChevronLeft,
   Heart,
@@ -316,84 +317,86 @@ export function PostDetailScreen() {
       <View style={styles.content}>
         <View style={styles.postInfo}>
           <View style={styles.authorRow}>
-            <AppAvatar uri={post.avatarUrl} size="lg" />
+            <View style={styles.authorLeft}>
+              <AppAvatar uri={post.avatarUrl} size="lg" />
 
-            <View style={styles.authorText}>
-              <AppText variant="bodyMedium">{post.builderName}</AppText>
-              <AppText variant="caption" tone="secondary">
-                {post.location} · {post.createdAt}
-              </AppText>
+              <View style={styles.authorText}>
+                <AppText variant="bodyMedium" numberOfLines={1}>
+                  {post.builderName}
+                </AppText>
+                <AppText variant="caption" tone="secondary" numberOfLines={1}>
+                  {post.location} · {post.createdAt}
+                </AppText>
+              </View>
             </View>
+
+            {relatedMotorcycle ? (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.relatedMotorcyclePill,
+                  pressed && styles.pressed,
+                ]}
+                onPress={() =>
+                  router.push(`/motorcycle/${relatedMotorcycle.id}`)
+                }
+              >
+                <Bike size={14} color={theme.primary} />
+                <AppText
+                  variant="caption"
+                  style={styles.relatedMotorcyclePillText}
+                >
+                  {relatedMotorcycle.model}
+                </AppText>
+              </Pressable>
+            ) : null}
           </View>
 
           <AppText style={styles.caption}>{post.caption}</AppText>
         </View>
 
-        <View style={styles.actionRow}>
-          <View style={styles.leftActions}>
+        <View style={styles.engagementBar}>
+          <View style={styles.engagementLeft}>
             <Pressable
               style={[
-                styles.actionButton,
+                styles.engagementButton,
                 updatingLike && styles.disabledAction,
               ]}
               disabled={updatingLike}
               onPress={handleToggleLike}
             >
               <Heart
-                size={22}
+                size={20}
                 color={liked ? theme.primary : theme.textPrimary}
                 fill={liked ? theme.primary : "transparent"}
               />
+              <AppText variant="caption">{likesCount} suka</AppText>
             </Pressable>
 
-            <Pressable style={styles.actionButton}>
-              <MessageCircle size={22} color={theme.textPrimary} />
+            <Pressable style={styles.engagementButton}>
+              <MessageCircle size={20} color={theme.textPrimary} />
+              <AppText variant="caption">{post.commentsCount} komentar</AppText>
             </Pressable>
 
-            <Pressable style={styles.actionButton}>
-              <Share2 size={22} color={theme.textPrimary} />
+            <Pressable style={styles.engagementIconButton}>
+              <Share2 size={20} color={theme.textPrimary} />
             </Pressable>
           </View>
 
           <Pressable
-            style={[styles.actionButton, updatingSave && styles.disabledAction]}
+            style={[
+              styles.engagementIconButton,
+              updatingSave && styles.disabledAction,
+            ]}
             disabled={updatingSave}
             onPress={handleToggleSave}
           >
             <Bookmark
-              size={22}
+              size={20}
               color={saved ? theme.primary : theme.textPrimary}
               fill={saved ? theme.primary : "transparent"}
             />
           </Pressable>
         </View>
-
-        <View style={styles.metricsRow}>
-          <AppText variant="bodyMedium">{likesCount} likes</AppText>
-          <AppText variant="caption" tone="secondary">
-            {post.commentsCount} komentar
-          </AppText>
-        </View>
-
-        {relatedMotorcycle ? (
-          <Pressable
-            style={styles.relatedMotorcycleBar}
-            onPress={() => router.push(`/motorcycle/${relatedMotorcycle.id}`)}
-          >
-            <View style={styles.relatedMotorcycleText}>
-              <AppText variant="caption" tone="secondary">
-                Related Motorcycle
-              </AppText>
-              <AppText variant="bodyMedium" numberOfLines={1}>
-                {relatedMotorcycle.brand} {relatedMotorcycle.model}
-              </AppText>
-            </View>
-
-            <AppText variant="caption" tone="muted">
-              Lihat
-            </AppText>
-          </Pressable>
-        ) : null}
 
         <View style={styles.commentsSection}>
           <View style={styles.commentsHeader}>
@@ -501,12 +504,19 @@ const styles = StyleSheet.create({
   authorRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     gap: spacing.md,
+  },
+  authorLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    flex: 1,
   },
   authorText: {
     flex: 1,
   },
-  actionRow: {
+  engagementBar: {
     marginTop: spacing.lg,
     paddingTop: spacing.md,
     borderTopWidth: 1,
@@ -514,23 +524,34 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-  },
-  leftActions: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: spacing.md,
   },
-  actionButton: {
-    width: 34,
-    height: 34,
+  engagementLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    flex: 1,
+  },
+  engagementButton: {
+    minHeight: 36,
+    borderRadius: radius.pill,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    paddingHorizontal: spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  engagementIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.pill,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
     alignItems: "center",
     justifyContent: "center",
-  },
-  metricsRow: {
-    marginTop: spacing.sm,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
   },
   caption: {
     lineHeight: 22,
@@ -590,30 +611,32 @@ const styles = StyleSheet.create({
   commentMeta: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     gap: spacing.sm,
   },
   commentBody: {
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
     lineHeight: 20,
   },
   postInfo: {
     gap: spacing.md,
   },
-  relatedMotorcycleBar: {
-    marginTop: spacing.lg,
-    borderRadius: radius.lg,
-    backgroundColor: theme.surface,
+  relatedMotorcyclePill: {
+    minHeight: 32,
+    maxWidth: 124,
+    borderRadius: radius.pill,
+    backgroundColor: theme.primarySoft,
     borderWidth: 1,
-    borderColor: theme.borderSoft,
-    padding: spacing.md,
+    borderColor: theme.primary,
+    paddingHorizontal: spacing.sm,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.md,
-  },
-  relatedMotorcycleText: {
-    flex: 1,
+    justifyContent: "center",
     gap: spacing.xs,
+  },
+  relatedMotorcyclePillText: {
+    color: theme.primary,
+  },
+  pressed: {
+    opacity: 0.82,
   },
 });
