@@ -155,7 +155,7 @@ export function ProfileScreen() {
       <View style={styles.header}>
         <AppText variant="titleLarge">Profile</AppText>
         <AppText tone="secondary" style={styles.subtitle}>
-          Kelola identitas builder, akun, dan aktivitas kamu.
+          Kelola identitas builder, post, dan aktivitas akun kamu.
         </AppText>
       </View>
 
@@ -184,36 +184,65 @@ export function ProfileScreen() {
         </View>
 
         <View style={styles.menuSection}>
-          <AppText variant="title">Account</AppText>
+          <View style={styles.menuHeader}>
+            <AppText variant="title">Account</AppText>
+            <AppText
+              variant="caption"
+              tone="secondary"
+              style={styles.menuSubtitle}
+            >
+              Kelola profil, koleksi, dan aktivitas akun kamu.
+            </AppText>
+          </View>
 
           <View style={styles.menuList}>
             <ProfileMenuItem
-              icon={<PenLine size={18} color={theme.textPrimary} />}
-              title="Edit Profil"
+              icon={<PenLine size={18} color={theme.primary} />}
+              title="Edit Profile"
+              description="Full Name, Builder Name, foto, bio, dan lokasi."
               onPress={() => router.push("/edit-profile")}
             />
 
             <ProfileMenuItem
-              icon={<Bookmark size={18} color={theme.textPrimary} />}
+              icon={<Bookmark size={18} color={theme.primary} />}
               title="Tersimpan"
+              description="Post inspirasi yang kamu simpan."
               onPress={() => router.push("/saved-posts")}
             />
 
             <ProfileMenuItem
-              icon={<Activity size={18} color={theme.textPrimary} />}
+              icon={<Activity size={18} color={theme.primary} />}
               title="Aktivitas"
+              description="Like, simpan, dan komentar kamu."
               onPress={() => router.push("/activity")}
             />
+          </View>
+        </View>
 
+        <View style={styles.menuSection}>
+          <View style={styles.menuHeader}>
+            <AppText variant="title">Support</AppText>
+            <AppText
+              variant="caption"
+              tone="secondary"
+              style={styles.menuSubtitle}
+            >
+              Pengaturan aplikasi dan bantuan penggunaan.
+            </AppText>
+          </View>
+
+          <View style={styles.menuList}>
             <ProfileMenuItem
-              icon={<Settings size={18} color={theme.textPrimary} />}
+              icon={<Settings size={18} color={theme.primary} />}
               title="Pengaturan"
+              description="Preferensi akun dan aplikasi."
               onPress={() => router.push("/settings")}
             />
 
             <ProfileMenuItem
-              icon={<CircleHelp size={18} color={theme.textPrimary} />}
+              icon={<CircleHelp size={18} color={theme.primary} />}
               title="Bantuan"
+              description="Pusat bantuan dan informasi ProperRide."
               onPress={() => router.push("/help")}
             />
           </View>
@@ -223,6 +252,7 @@ export function ProfileScreen() {
           <ProfileMenuItem
             icon={<LogOut size={18} color={theme.danger} />}
             title={signingOut ? "Keluar..." : "Keluar"}
+            description="Keluar dari akun ProperRide di perangkat ini."
             danger
             onPress={handleSignOut}
           />
@@ -261,6 +291,12 @@ const styles = StyleSheet.create({
   menuSection: {
     marginTop: spacing.section,
     gap: spacing.md,
+  },
+  menuHeader: {
+    gap: spacing.xs,
+  },
+  menuSubtitle: {
+    maxWidth: 320,
   },
   menuList: {
     gap: spacing.sm,
