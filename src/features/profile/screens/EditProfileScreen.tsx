@@ -190,17 +190,17 @@ export function EditProfileScreen() {
     const trimmedBio = bio.trim();
 
     if (!trimmedFullName) {
-      Alert.alert("Nama belum diisi", "Nama lengkap wajib diisi.");
+      Alert.alert("Nama belum diisi", "Full Name wajib diisi.");
       return;
     }
 
     if (!normalizedUsername) {
-      setUsernameError("Username wajib diisi.");
+      setUsernameError("Builder Name wajib diisi.");
       return;
     }
 
     if (normalizedUsername.length < 3) {
-      setUsernameError("Username minimal 3 karakter.");
+      setUsernameError("Builder Name minimal 3 karakter.");
       return;
     }
 
@@ -291,7 +291,7 @@ export function EditProfileScreen() {
         <View style={styles.headerText}>
           <AppText variant="titleLarge">Edit Profile</AppText>
           <AppText tone="secondary" style={styles.subtitle}>
-            Perbarui identitas builder yang tampil di Profile kamu.
+            Perbarui Full Name, Builder Name, foto, dan detail Profile kamu.
           </AppText>
         </View>
       </View>
@@ -334,16 +334,16 @@ export function EditProfileScreen() {
         </View>
 
         <AppInput
-          label="Nama lengkap"
-          placeholder="Contoh: Andi Pratama"
+          label="Full Name"
+          placeholder="Contoh: Zaky Pratama"
           value={fullName}
           onChangeText={setFullName}
           autoCapitalize="words"
         />
 
         <AppInput
-          label="Username"
-          placeholder="contoh: andi.nmax"
+          label="Builder Name"
+          placeholder="contoh: elmoo.garage"
           value={username}
           onChangeText={(value) => {
             setUsername(value);
@@ -351,16 +351,15 @@ export function EditProfileScreen() {
           }}
           autoCapitalize="none"
           errorText={usernameError ?? undefined}
-          helperText="Gunakan huruf kecil, angka, titik, atau underscore."
+          helperText="Gunakan huruf kecil, angka, titik, atau underscore. Builder Name akan tampil sebagai identitas publik."
         />
 
         <AppInput
           label="Lokasi"
-          placeholder="Contoh: Jakarta, Indonesia"
+          placeholder="Contoh: Jakarta, Bandung, Bali"
           value={location}
           onChangeText={setLocation}
         />
-
         <AppInput
           label="Bio"
           placeholder="Ceritakan gaya build atau fokus modifikasi kamu."

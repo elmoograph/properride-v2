@@ -1,8 +1,8 @@
-import { Image, Pressable, StyleSheet, View } from "react-native";
-import { ChevronRight, User, Warehouse } from "lucide-react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { ChevronRight, MapPin, Warehouse } from "lucide-react-native";
 import { router } from "expo-router";
 
-import { AppText } from "@/src/shared/components";
+import { AppAvatar, AppText } from "@/src/shared/components";
 import { radius, spacing, theme } from "@/src/shared/theme";
 
 type ProfileHeaderData = {
@@ -19,34 +19,32 @@ type ProfileHeaderProps = {
 };
 
 export function ProfileHeader({ profile }: ProfileHeaderProps) {
-  const hasAvatar = Boolean(profile.avatarUrl);
-
   return (
     <View style={styles.container}>
       <View style={styles.identity}>
-        {hasAvatar ? (
-          <Image
-            source={{ uri: profile.avatarUrl ?? "" }}
-            style={styles.avatar}
-          />
-        ) : (
-          <View style={[styles.avatar, styles.avatarFallback]}>
-            <User size={28} color={theme.textMuted} />
-          </View>
-        )}
+        <AppAvatar uri={profile.avatarUrl} size="xl" />
 
         <View style={styles.identityText}>
-          <AppText variant="caption" tone="muted">
-            @{profile.username}
+          <AppText variant="titleLarge" style={styles.name} numberOfLines={1}>
+            {profile.username}
           </AppText>
 
-          <AppText variant="titleLarge" style={styles.name}>
-            {profile.displayName}
+          <AppText variant="caption" tone="secondary" style={styles.fullName}>
+            Full Name: {profile.displayName}
           </AppText>
 
-          <AppText variant="caption" tone="secondary" style={styles.location}>
-            {profile.location ?? "Lokasi belum diisi"}
-          </AppText>
+          <View style={styles.locationRow}>
+            <MapPin size={13} color={theme.primary} />
+
+            <AppText
+              variant="caption"
+              tone="secondary"
+              style={styles.location}
+              numberOfLines={1}
+            >
+              {profile.location ?? "Lokasi belum diisi"}
+            </AppText>
+          </View>
         </View>
       </View>
 
@@ -93,26 +91,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.md,
   },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.pill,
-    backgroundColor: theme.surfaceSoft,
-    borderWidth: 2,
-    borderColor: theme.border,
-  },
-  avatarFallback: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
   identityText: {
     flex: 1,
   },
   name: {
+    marginTop: 0,
+  },
+  fullName: {
     marginTop: spacing.xs,
   },
-  location: {
+  locationRow: {
     marginTop: spacing.xs,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  location: {
+    flex: 1,
   },
   bio: {
     marginTop: spacing.lg,
