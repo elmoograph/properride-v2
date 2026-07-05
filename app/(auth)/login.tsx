@@ -38,7 +38,7 @@ export default function LoginScreen() {
         password,
       });
 
-      router.replace("/(tabs)/feed");
+      router.replace("/");
     } catch (error) {
       const message =
         error instanceof Error

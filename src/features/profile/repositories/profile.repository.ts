@@ -69,6 +69,7 @@ export async function ensureProfileForUser(user: User) {
     avatar_url: null,
     location: null,
     bio: null,
+    onboarding_completed: false,
   };
 
   const { data, error } = await supabase
@@ -95,6 +96,7 @@ export async function updateProfile(
       | "avatar_url"
       | "location"
       | "bio"
+      | "onboarding_completed"
     >
   >,
 ) {
@@ -113,5 +115,5 @@ export async function updateProfile(
 }
 
 export function isProfileComplete(profile: ProfileRow | null) {
-  return Boolean(profile?.full_name?.trim() && profile?.username?.trim());
+  return profile?.onboarding_completed === true;
 }

@@ -20,10 +20,10 @@ export type ProfileRow = {
   avatar_url: string | null;
   location: string | null;
   bio: string | null;
+  onboarding_completed: boolean;
   created_at: string;
   updated_at: string;
 };
-
 export type MotorcycleRow = {
   id: string;
   user_id: string;
@@ -127,6 +127,7 @@ export type Database = {
           avatar_url?: string | null;
           location?: string | null;
           bio?: string | null;
+          onboarding_completed?: boolean;
           created_at?: string;
           updated_at?: string;
         };

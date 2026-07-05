@@ -130,6 +130,7 @@ export function ProfileOnboardingScreen() {
       await updateProfile(user.id, {
         full_name: trimmedBuilderName,
         username: normalizedUsername,
+        onboarding_completed: true,
       });
 
       router.replace("/(tabs)/feed");
@@ -195,9 +196,7 @@ export function ProfileOnboardingScreen() {
               </AppText>
 
               <AppText variant="title" numberOfLines={1}>
-                {(normalizedUsername || trimmedBuilderName)
-                  .charAt(0)
-                  .toUpperCase() || "P"}
+                {normalizedUsername || "builder.name"}
               </AppText>
 
               <AppText variant="caption" tone="secondary" numberOfLines={1}>
