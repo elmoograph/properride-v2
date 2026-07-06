@@ -1,9 +1,10 @@
 import { Image, Pressable, StyleSheet, View } from "react-native";
+import { ImagePlus } from "lucide-react-native";
+import { router } from "expo-router";
 
-import { AppText } from "@/src/shared/components";
+import { AppButton, AppText } from "@/src/shared/components";
 import { radius, spacing, theme } from "@/src/shared/theme";
 import type { FeedPost } from "@/src/shared/types/app.types";
-import { router } from "expo-router";
 
 type ProfilePostGridProps = {
   posts: FeedPost[];
@@ -13,10 +14,24 @@ export function ProfilePostGrid({ posts }: ProfilePostGridProps) {
   if (posts.length === 0) {
     return (
       <View style={styles.emptyCard}>
+        <View style={styles.emptyIcon}>
+          <ImagePlus size={22} color={theme.primary} />
+        </View>
+
         <AppText variant="bodyMedium">Belum ada post</AppText>
+
         <AppText variant="caption" tone="secondary" style={styles.emptyText}>
-          Post yang kamu buat akan tampil di sini.
+          Bagikan foto build, detail modifikasi, atau inspirasi motor pertama
+          kamu ke Feed.
         </AppText>
+
+        <AppButton
+          variant="secondary"
+          style={styles.emptyButton}
+          onPress={() => router.push("/create-post")}
+        >
+          Buat Post
+        </AppButton>
       </View>
     );
   }
@@ -26,7 +41,7 @@ export function ProfilePostGrid({ posts }: ProfilePostGridProps) {
       {posts.map((post) => (
         <Pressable
           key={post.id}
-          style={styles.gridItem}
+          style={({ pressed }) => [styles.gridItem, pressed && styles.pressed]}
           onPress={() => router.push(`/post/${post.id}`)}
         >
           <Image source={{ uri: post.imageUrl }} style={styles.image} />
@@ -59,8 +74,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.borderSoft,
     padding: spacing.lg,
+    alignItems: "flex-start",
+  },
+  emptyIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.pill,
+    backgroundColor: theme.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.md,
   },
   emptyText: {
     marginTop: spacing.xs,
+    maxWidth: 300,
+    lineHeight: 18,
+  },
+  emptyButton: {
+    marginTop: spacing.lg,
+  },
+  pressed: {
+    opacity: 0.82,
   },
 });
