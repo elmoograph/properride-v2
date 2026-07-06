@@ -61,7 +61,7 @@ export function SettingsScreen() {
             </AppText>
 
             <AppText variant="caption" tone="muted" numberOfLines={1}>
-              User ID: {user.id}
+              Akun ProperRide aktif
             </AppText>
 
             <AppText
@@ -80,28 +80,28 @@ export function SettingsScreen() {
 
         <View style={styles.settingList}>
           <SettingItem
-            icon={<Moon size={18} color={theme.textPrimary} />}
+            icon={<Moon size={18} color={theme.primary} />}
             title="Appearance"
             description="Mode tampilan aplikasi."
             value="Dark"
           />
 
           <SettingItem
-            icon={<Bell size={18} color={theme.textPrimary} />}
+            icon={<Bell size={18} color={theme.primary} />}
             title="Notifications"
             description="Pengaturan notifikasi aktivitas."
             value="Soon"
           />
 
           <SettingItem
-            icon={<Shield size={18} color={theme.textPrimary} />}
+            icon={<Shield size={18} color={theme.primary} />}
             title="Privacy"
             description="Kontrol visibilitas akun dan konten."
             value="Soon"
           />
 
           <SettingItem
-            icon={<Lock size={18} color={theme.textPrimary} />}
+            icon={<Lock size={18} color={theme.primary} />}
             title="Security"
             description="Password dan keamanan akun."
             value="Soon"
