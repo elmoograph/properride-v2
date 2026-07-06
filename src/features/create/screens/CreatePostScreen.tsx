@@ -279,18 +279,36 @@ export function CreatePostScreen() {
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsMultipleSelection: true,
-      selectionLimit: remainingSlots,
-      quality: 0.88,
-    });
+    let result: ImagePicker.ImagePickerResult;
+
+    try {
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsMultipleSelection: true,
+        selectionLimit: remainingSlots,
+        quality: 0.88,
+        base64: false,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat memilih foto.";
+
+      Alert.alert(
+        "Gagal memilih foto",
+        `${message}\n\nCoba pilih foto dari galeri lokal atau download foto dari Google Photos terlebih dahulu.`,
+      );
+      return;
+    }
 
     if (result.canceled) {
       return;
     }
 
-    const nextUris = result.assets.map((asset) => asset.uri).filter(Boolean);
+    const nextUris = result.assets
+      .map((asset) => asset.uri)
+      .filter((uri): uri is string => Boolean(uri));
 
     if (nextUris.length === 0) {
       Alert.alert("Foto tidak valid", "Pilih foto lain untuk Post.");
@@ -367,7 +385,8 @@ export function CreatePostScreen() {
             visibility={visibility}
             selectedMotorcycleName={
               selectedMotorcycle
-                ? `${selectedMotorcycle.brand} ${selectedMotorcycle.model}`
+                ? (selectedMotorcycle.name ??
+                  `${selectedMotorcycle.brand} ${selectedMotorcycle.model}`.trim())
                 : null
             }
             onChangeVisibility={setVisibility}
@@ -471,7 +490,7 @@ function MediaStep({
       </View>
 
       <AppText variant="caption" tone="muted" style={styles.note}>
-        Foto akan di-upload ke Supabase Storage saat Post dibuat.
+        Foto akan diunggah saat Post dibuat.
       </AppText>
     </View>
   );
@@ -648,7 +667,7 @@ function SummaryStep({
             tone="secondary"
             style={styles.sectionSubtitle}
           >
-            Periksa ringkasan sebelum post masuk ke Feed.
+            Periksa ringkasan sebelum Post masuk ke Feed.
           </AppText>
         </View>
       </View>
