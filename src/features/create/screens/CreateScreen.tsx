@@ -21,35 +21,35 @@ export function CreateScreen() {
           icon={<PenSquare size={24} color={theme.primary} />}
           title="Buat Post"
           description="Bagikan momen, cerita ride, atau inspirasi ke komunitas."
-          onPress={() => router.push("/(create)/create-post")}
+          onPress={() => router.push("/create-post")}
         />
 
         <CreateActionCard
           icon={<Bike size={24} color={theme.primary} />}
           title="Tambah Motor"
           description="Simpan motor kamu ke Garage agar bisa terhubung ke post."
-          onPress={() => router.push("/(create)/add-motorcycle")}
+          onPress={() => router.push("/add-motorcycle")}
         />
 
         <CreateActionCard
           icon={<PackagePlus size={24} color={theme.primary} />}
           title="Tambah Part"
           description="Pilih motor dulu, lalu catat part yang terpasang."
-          onPress={() => router.push("/(create)/select-motorcycle-for-part")}
+          onPress={() => router.push("/select-motorcycle-for-part")}
         />
 
         <CreateActionCard
           icon={<ImagePlus size={24} color={theme.primary} />}
           title="Tambah Gallery"
           description="Pilih motor dulu, lalu tambahkan foto ke galerinya."
-          onPress={() => router.push("/(create)/select-motorcycle-for-gallery")}
+          onPress={() => router.push("/select-motorcycle-for-gallery")}
         />
       </View>
 
       <View style={styles.note}>
         <AppText variant="caption" tone="muted">
-          Form detail akan dibuat sederhana dulu. Informasi tambahan bisa
-          dilengkapi nanti.
+          Mulai dari aksi utama. Detail tambahan bisa kamu lengkapi setelah
+          konten dibuat.
         </AppText>
       </View>
     </AppScreen>

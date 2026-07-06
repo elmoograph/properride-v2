@@ -623,6 +623,7 @@ function MotorcycleStep({
                 >
                   <MotorcycleSelectCard
                     motorcycle={motorcycle}
+                    selected={isSelected}
                     onPress={() =>
                       onSelectMotorcycle(isSelected ? null : motorcycle.id)
                     }
