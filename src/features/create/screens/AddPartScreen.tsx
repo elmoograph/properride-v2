@@ -6,7 +6,7 @@ import {
 } from "@/src/features/garage/repositories/motorcyclePart.repository";
 import { router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -23,10 +23,10 @@ import {
   AppText,
 } from "@/src/shared/components";
 import {
-  partBrandOptions,
+  partBrandOptionsByCategory,
   partCategoryOptions,
 } from "@/src/shared/constants/partOptions";
-import { spacing, theme } from "@/src/shared/theme";
+import { radius, spacing, theme } from "@/src/shared/theme";
 import type { MotorcycleRow } from "@/src/shared/types/database.types";
 
 type SelectField = "category" | "brand" | null;
@@ -41,19 +41,29 @@ export function AddPartScreen() {
 
   const [category, setCategory] = useState("");
   const [partBrand, setPartBrand] = useState("");
-  const [customBrand, setCustomBrand] = useState("");
+  const [otherBrandName, setOtherBrandName] = useState("");
+  const [customBy, setCustomBy] = useState("");
   const [partName, setPartName] = useState("");
+  const [description, setDescription] = useState("");
   const [activeSelect, setActiveSelect] = useState<SelectField>(null);
   const [submitting, setSubmitting] = useState(false);
+  const brandOptions = useMemo(() => {
+    if (!category) {
+      return [];
+    }
 
-  const isCustomBrand = partBrand === "custom";
+    return partBrandOptionsByCategory[category] ?? [];
+  }, [category]);
+  const isOtherBrand = partBrand === "Other";
+  const isCustomPart = partBrand === "Custom";
 
   const isSubmitDisabled =
     submitting ||
     !motorcycle ||
     !category ||
     !partBrand ||
-    (isCustomBrand && !customBrand.trim()) ||
+    (isOtherBrand && !otherBrandName.trim()) ||
+    (isCustomPart && !customBy.trim()) ||
     !partName.trim();
 
   useEffect(() => {
@@ -104,11 +114,22 @@ export function AddPartScreen() {
     };
   }, [motorcycleId]);
 
+  function handleCategoryChange(nextCategory: string) {
+    setCategory(nextCategory);
+    setPartBrand("");
+    setOtherBrandName("");
+    setCustomBy("");
+  }
+
   function handleBrandChange(nextBrand: string) {
     setPartBrand(nextBrand);
 
-    if (nextBrand !== "custom") {
-      setCustomBrand("");
+    if (nextBrand !== "Other") {
+      setOtherBrandName("");
+    }
+
+    if (nextBrand !== "Custom") {
+      setCustomBy("");
     }
   }
 
@@ -123,8 +144,14 @@ export function AddPartScreen() {
       return;
     }
 
-    const finalBrand = isCustomBrand ? customBrand.trim() : partBrand;
+    const finalBrand = isOtherBrand
+      ? otherBrandName.trim()
+      : isCustomPart
+        ? `Custom by ${customBy.trim()}`
+        : partBrand;
+
     const cleanPartName = partName.trim();
+    const cleanDescription = description.trim();
 
     try {
       setSubmitting(true);
@@ -135,13 +162,16 @@ export function AddPartScreen() {
         category,
         brand: finalBrand,
         name: cleanPartName,
+        description: cleanDescription || null,
       });
 
       await createPartAddedTimelineItem({
         motorcycleId: motorcycle.id,
         userId: user.id,
         title: cleanPartName,
-        description: `${finalBrand} ditambahkan ke setup ${motorcycle.brand} ${motorcycle.model}.`,
+        description: cleanDescription
+          ? `${finalBrand} ditambahkan. ${cleanDescription}`
+          : `${finalBrand} ditambahkan ke setup ${motorcycle.brand} ${motorcycle.model}.`,
       });
 
       Alert.alert(
@@ -189,9 +219,7 @@ export function AddPartScreen() {
               "Pilih motor terlebih dahulu sebelum menambahkan part."}
           </AppText>
           <AppButton
-            onPress={() =>
-              router.replace("/(create)/select-motorcycle-for-part")
-            }
+            onPress={() => router.replace("/select-motorcycle-for-part")}
           >
             Pilih Motor
           </AppButton>
@@ -242,28 +270,39 @@ export function AddPartScreen() {
           visible={activeSelect === "category"}
           onOpen={() => setActiveSelect("category")}
           onClose={() => setActiveSelect(null)}
-          onChange={setCategory}
+          onChange={handleCategoryChange}
         />
 
         <View style={styles.brandSection}>
           <AppSelect
             label="Brand part"
-            placeholder="Pilih brand"
+            placeholder={category ? "Pilih brand" : "Pilih kategori dulu"}
             value={partBrand}
-            options={partBrandOptions}
+            options={brandOptions}
             visible={activeSelect === "brand"}
             onOpen={() => setActiveSelect("brand")}
             onClose={() => setActiveSelect(null)}
             onChange={handleBrandChange}
+            disabled={!category}
           />
 
-          {isCustomBrand ? (
+          {isOtherBrand ? (
+            <AppInput
+              label="Brand name"
+              placeholder="Contoh: SPS, KRS, brand lokal lain"
+              value={otherBrandName}
+              onChangeText={setOtherBrandName}
+              helperText="Isi nama brand jika tidak tersedia di list."
+            />
+          ) : null}
+
+          {isCustomPart ? (
             <AppInput
               label="By"
-              placeholder="Contoh: Bengkel lokal / brand custom"
-              value={customBrand}
-              onChangeText={setCustomBrand}
-              helperText="Isi nama pembuat atau brand custom."
+              placeholder="Contoh: Bengkel Rapi Jaya / Pak Budi Custom"
+              value={customBy}
+              onChangeText={setCustomBy}
+              helperText="Isi nama bengkel, builder, atau pembuat part custom."
             />
           ) : null}
         </View>
@@ -274,6 +313,16 @@ export function AddPartScreen() {
           value={partName}
           onChangeText={setPartName}
           helperText="Isi nama produk atau seri part."
+        />
+
+        <AppInput
+          label="Keterangan"
+          placeholder="Contoh: Ukuran 120/70, custom bracket, setting harian..."
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          inputStyle={styles.descriptionInput}
+          helperText="Opsional. Tambahkan detail ukuran, warna, setting, atau catatan pemasangan."
         />
 
         <AppButton
@@ -303,7 +352,7 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 999,
+    borderRadius: radius.pill,
     backgroundColor: theme.surface,
     borderWidth: 1,
     borderColor: theme.borderSoft,
@@ -319,7 +368,7 @@ const styles = StyleSheet.create({
   },
   contextCard: {
     marginTop: spacing.section,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     backgroundColor: theme.surface,
     borderWidth: 1,
     borderColor: theme.borderSoft,
@@ -354,5 +403,9 @@ const styles = StyleSheet.create({
   centerText: {
     maxWidth: 280,
     textAlign: "center",
+  },
+
+  descriptionInput: {
+    minHeight: 96,
   },
 });

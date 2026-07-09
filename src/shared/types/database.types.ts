@@ -50,6 +50,7 @@ export type MotorcyclePartRow = {
   archived_at: string | null;
   created_at: string;
   updated_at: string;
+  description: string | null;
 };
 
 export type MotorcycleGalleryItemRow = {
@@ -166,6 +167,7 @@ export type Database = {
           archived_at?: string | null;
           created_at?: string;
           updated_at?: string;
+          description?: string | null;
         };
         Update: Partial<
           Omit<

@@ -10,6 +10,7 @@ export type CreateMotorcyclePartPayload = {
   category: string;
   brand: string;
   name: string;
+  description?: string | null;
 };
 
 export async function listPartsByMotorcycleId(
@@ -35,6 +36,7 @@ export async function createMotorcyclePart({
   category,
   brand,
   name,
+  description = null,
 }: CreateMotorcyclePartPayload): Promise<MotorcyclePartRow> {
   const { data, error } = await supabase
     .from("motorcycle_parts")
@@ -44,7 +46,7 @@ export async function createMotorcyclePart({
       category,
       brand,
       name,
-      archived_at: null,
+      description,
     })
     .select("*")
     .single();
