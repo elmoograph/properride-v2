@@ -27,7 +27,7 @@ export function CreateActionCard({
 
       <View style={styles.content}>
         <AppText variant="title">{title}</AppText>
-        <AppText tone="secondary" style={styles.description}>
+        <AppText tone="secondary" style={styles.description} numberOfLines={2}>
           {description}
         </AppText>
       </View>
@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
   iconBadge: {
     width: 48,
     height: 48,
-    borderRadius: radius.lg,
+    borderRadius: radius.pill,
     backgroundColor: theme.primarySoft,
     alignItems: "center",
     justifyContent: "center",
@@ -62,6 +62,7 @@ const styles = StyleSheet.create({
   },
   description: {
     marginTop: spacing.xs,
+    lineHeight: 20,
   },
   pressed: {
     opacity: 0.82,

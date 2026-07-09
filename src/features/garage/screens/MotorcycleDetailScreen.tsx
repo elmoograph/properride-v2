@@ -453,6 +453,16 @@ function SetupPartsTab({
                           >
                             {part.brand} · {part.category}
                           </AppText>
+
+                          {part.description ? (
+                            <AppText
+                              variant="caption"
+                              tone="muted"
+                              style={styles.partDescription}
+                            >
+                              {part.description}
+                            </AppText>
+                          ) : null}
                         </View>
 
                         <Pressable
@@ -872,5 +882,9 @@ const styles = StyleSheet.create({
   centerText: {
     maxWidth: 280,
     textAlign: "center",
+  },
+  partDescription: {
+    marginTop: spacing.xs,
+    lineHeight: 18,
   },
 });
