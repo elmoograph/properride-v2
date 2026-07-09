@@ -43,7 +43,7 @@ export function createStorageImagePath({
   fileName,
 }: {
   userId: string;
-  folder: "avatars" | "motorcycles" | "gallery" | "posts";
+  folder: "avatars" | "motorcycles" | "gallery" | "posts" | "garage-covers";
   ownerId?: string;
   fileName?: string;
 }) {

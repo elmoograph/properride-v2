@@ -93,6 +93,7 @@ export async function updateProfile(
       | "full_name"
       | "username"
       | "garage_name"
+      | "garage_cover_url"
       | "avatar_url"
       | "location"
       | "bio"

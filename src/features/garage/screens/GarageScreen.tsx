@@ -161,7 +161,8 @@ export function GarageScreen() {
     <AppScreen scrollable>
       <GarageHeader
         garageName={profile?.garage_name ?? "ProperRide Garage"}
-        builderName={profile?.full_name ?? user.email ?? "ProperRide Rider"}
+        builderName={profile?.username ?? user.email ?? "ProperRide Rider"}
+        coverUrl={profile?.garage_cover_url ?? null}
         onPressEdit={() => router.push("/edit-garage")}
       />
 

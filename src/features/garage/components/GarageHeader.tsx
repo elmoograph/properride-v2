@@ -1,4 +1,4 @@
-import { Edit3 } from "lucide-react-native";
+import { Edit3, ImageIcon } from "lucide-react-native";
 import { Image, Pressable, StyleSheet, View } from "react-native";
 
 import { AppText } from "@/src/shared/components";
@@ -7,20 +7,39 @@ import { radius, spacing, theme } from "@/src/shared/theme";
 type GarageHeaderProps = {
   garageName: string;
   builderName: string;
+  coverUrl: string | null;
   onPressEdit?: () => void;
 };
-
-const heroImageUrl =
-  "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=1200";
 
 export function GarageHeader({
   garageName,
   builderName,
+  coverUrl,
   onPressEdit,
 }: GarageHeaderProps) {
+  const hasCover = Boolean(coverUrl);
+
   return (
     <View style={styles.container}>
-      <Image source={{ uri: heroImageUrl }} style={styles.heroImage} />
+      {hasCover ? (
+        <Image source={{ uri: coverUrl ?? "" }} style={styles.heroImage} />
+      ) : (
+        <View style={[styles.heroImage, styles.heroPlaceholder]}>
+          <View style={styles.placeholderIcon}>
+            <ImageIcon size={28} color={theme.primary} />
+          </View>
+
+          <AppText
+            variant="caption"
+            tone="secondary"
+            style={styles.placeholderText}
+          >
+            Tambahkan cover Garage dari Edit Garage.
+          </AppText>
+        </View>
+      )}
+
+      <View style={styles.overlay} />
 
       <View style={styles.floatingCard}>
         <View style={styles.identity}>
@@ -32,6 +51,7 @@ export function GarageHeader({
             variant="caption"
             tone="secondary"
             style={styles.builderText}
+            numberOfLines={1}
           >
             <AppText variant="caption" tone="accent">
               Builder Name:{" "}
@@ -67,6 +87,28 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 230,
     backgroundColor: theme.surfaceSoft,
+  },
+  heroPlaceholder: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.xl,
+  },
+  placeholderIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: radius.pill,
+    backgroundColor: theme.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  placeholderText: {
+    marginTop: spacing.md,
+    textAlign: "center",
+  },
+  overlay: {
+    ...StyleSheet.absoluteFill,
+    height: 230,
+    backgroundColor: "rgba(0, 0, 0, 0.16)",
   },
   floatingCard: {
     position: "absolute",

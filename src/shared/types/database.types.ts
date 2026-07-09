@@ -21,6 +21,7 @@ export type ProfileRow = {
   location: string | null;
   bio: string | null;
   onboarding_completed: boolean;
+  garage_cover_url: string | null;
   created_at: string;
   updated_at: string;
 };
