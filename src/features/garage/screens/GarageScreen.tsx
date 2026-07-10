@@ -17,6 +17,7 @@ import {
 } from "@/src/features/garage/components/GarageMotorcycleCard";
 import { listMotorcyclesByUserId } from "@/src/features/garage/repositories/motorcycle.repository";
 import { listPartsByMotorcycleId } from "@/src/features/garage/repositories/motorcyclePart.repository";
+import { listGalleryItemsByMotorcycleId } from "@/src/features/garage/repositories/motorcycleGallery.repository";
 import { getProfileById } from "@/src/features/profile/repositories/profile.repository";
 import {
   AppButton,
@@ -52,6 +53,7 @@ export function GarageScreen() {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [motorcycles, setMotorcycles] = useState<MotorcycleRow[]>([]);
   const [totalPartsCount, setTotalPartsCount] = useState(0);
+  const [totalGalleryCount, setTotalGalleryCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -76,6 +78,7 @@ export function GarageScreen() {
           setProfile(null);
           setMotorcycles([]);
           setTotalPartsCount(0);
+          setTotalGalleryCount(0);
           setLoading(false);
           return;
         }
@@ -88,14 +91,26 @@ export function GarageScreen() {
             listMotorcyclesByUserId(user.id),
           ]);
 
-          const partsByMotorcycle = await Promise.all(
-            motorcycleData.map((motorcycle) =>
-              listPartsByMotorcycleId(motorcycle.id),
+          const [partsByMotorcycle, galleryByMotorcycle] = await Promise.all([
+            Promise.all(
+              motorcycleData.map((motorcycle) =>
+                listPartsByMotorcycleId(motorcycle.id),
+              ),
             ),
-          );
+            Promise.all(
+              motorcycleData.map((motorcycle) =>
+                listGalleryItemsByMotorcycleId(motorcycle.id),
+              ),
+            ),
+          ]);
 
           const partsCount = partsByMotorcycle.reduce(
             (total, parts) => total + parts.length,
+            0,
+          );
+
+          const galleryCount = galleryByMotorcycle.reduce(
+            (total, galleryItems) => total + galleryItems.length,
             0,
           );
 
@@ -103,6 +118,7 @@ export function GarageScreen() {
             setProfile(profileData);
             setMotorcycles(motorcycleData);
             setTotalPartsCount(partsCount);
+            setTotalGalleryCount(galleryCount);
           }
         } catch (error) {
           const message =
@@ -185,7 +201,7 @@ export function GarageScreen() {
       <View style={styles.statsRow}>
         <GarageStatItem label="Builds" value={motorcycles.length} />
         <GarageStatItem label="Parts" value={totalPartsCount} />
-        <GarageStatItem label="Gallery" value={0} />
+        <GarageStatItem label="Gallery" value={totalGalleryCount} />
         <GarageStatItem label="Posts" value={0} />
       </View>
 
