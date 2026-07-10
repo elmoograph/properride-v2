@@ -166,9 +166,7 @@ export function MotorcycleDetailScreen() {
     );
   }
 
-  const motorcycleImageUrl =
-    motorcycle.image_url ??
-    "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=1200";
+  const motorcycleImageUrl = motorcycle.image_url;
 
   const motorcycleTitle =
     motorcycle.name || `${motorcycle.brand} ${motorcycle.model}`;
@@ -232,7 +230,18 @@ export function MotorcycleDetailScreen() {
   return (
     <AppScreen scrollable padded={false}>
       <View style={styles.heroWrap}>
-        <Image source={{ uri: motorcycleImageUrl }} style={styles.heroImage} />
+        {motorcycleImageUrl ? (
+          <Image
+            source={{ uri: motorcycleImageUrl }}
+            style={styles.heroImage}
+          />
+        ) : (
+          <View style={[styles.heroImage, styles.heroPlaceholder]}>
+            <AppText variant="caption" tone="secondary">
+              Foto motor belum ditambahkan.
+            </AppText>
+          </View>
+        )}
 
         <View style={styles.heroOverlay} />
 
@@ -241,7 +250,10 @@ export function MotorcycleDetailScreen() {
             <ChevronLeft size={22} color={theme.textPrimary} />
           </Pressable>
 
-          <Pressable style={styles.iconButton}>
+          <Pressable
+            style={styles.iconButton}
+            onPress={() => router.push(`/motorcycle/edit/${motorcycle.id}`)}
+          >
             <Edit3 size={18} color={theme.textPrimary} />
           </Pressable>
         </View>
@@ -886,5 +898,10 @@ const styles = StyleSheet.create({
   partDescription: {
     marginTop: spacing.xs,
     lineHeight: 18,
+  },
+  heroPlaceholder: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.lg,
   },
 });

@@ -18,6 +18,18 @@ export type CreateMotorcyclePayload = {
   visibility?: Visibility;
 };
 
+export type UpdateMotorcyclePayload = Partial<{
+  name: string | null;
+  brand: string;
+  model: string;
+  year: string;
+  engine_cc: number | null;
+  engine_info: string | null;
+  image_url: string | null;
+  status: MotorcycleRow["status"];
+  visibility: MotorcycleRow["visibility"];
+}>;
+
 export async function listMotorcyclesByUserId(userId: string) {
   const { data, error } = await supabase
     .from("motorcycles")
@@ -38,6 +50,24 @@ export async function getMotorcycleById(id: string) {
     .select("*")
     .eq("id", id)
     .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function updateMotorcycleById(
+  motorcycleId: string,
+  payload: UpdateMotorcyclePayload,
+): Promise<MotorcycleRow> {
+  const { data, error } = await supabase
+    .from("motorcycles")
+    .update(payload)
+    .eq("id", motorcycleId)
+    .select("*")
+    .single();
 
   if (error) {
     throw error;
