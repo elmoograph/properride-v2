@@ -3,6 +3,7 @@ import { Edit3, Plus, Star } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -227,9 +228,16 @@ export function GarageScreen() {
             pressed && featuredMotorcycle && styles.pressed,
           ]}
         >
-          <View style={styles.featuredIcon}>
-            <Star size={18} color={theme.primary} />
-          </View>
+          {featuredMotorcycle?.imageUrl ? (
+            <Image
+              source={{ uri: featuredMotorcycle.imageUrl }}
+              style={styles.featuredImage}
+            />
+          ) : (
+            <View style={styles.featuredIcon}>
+              <Star size={18} color={theme.primary} />
+            </View>
+          )}
 
           <View style={styles.featuredText}>
             <AppText variant="bodyMedium" numberOfLines={1}>
@@ -240,11 +248,12 @@ export function GarageScreen() {
               variant="caption"
               tone="secondary"
               style={styles.featuredMeta}
+              numberOfLines={2}
             >
               {featuredMotorcycle
-                ? `${featuredMotorcycle.year} · ${
-                    featuredMotorcycle.engineInfo ?? "Mesin belum diisi"
-                  }`
+                ? `${featuredMotorcycle.brand} ${featuredMotorcycle.model} · ${
+                    featuredMotorcycle.year
+                  } · ${featuredMotorcycle.engineInfo ?? "Mesin belum diisi"}`
                 : "Tambahkan motor pertama untuk menampilkan build unggulan."}
             </AppText>
           </View>
@@ -339,7 +348,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.section,
   },
   featuredCard: {
-    minHeight: 82,
+    minHeight: 92,
     borderRadius: radius.xl,
     backgroundColor: theme.surface,
     borderWidth: 1,
@@ -348,6 +357,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
+  },
+  featuredImage: {
+    width: 72,
+    height: 58,
+    borderRadius: radius.lg,
+    backgroundColor: theme.surfaceSoft,
   },
   featuredIcon: {
     width: 42,
