@@ -45,3 +45,19 @@ export async function createMotorcycleGalleryItem({
 
   return data;
 }
+
+export async function getGalleryItemById(
+  galleryItemId: string,
+): Promise<MotorcycleGalleryItemRow | null> {
+  const { data, error } = await supabase
+    .from("motorcycle_gallery_items")
+    .select("*")
+    .eq("id", galleryItemId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
