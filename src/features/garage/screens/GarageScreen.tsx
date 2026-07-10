@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from "expo-router";
-import { Plus } from "lucide-react-native";
+import { Edit3, Plus, Star } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -15,7 +15,6 @@ import {
   GarageMotorcycleCard,
   type GarageMotorcycleCardData,
 } from "@/src/features/garage/components/GarageMotorcycleCard";
-import { SetupOverviewCard } from "@/src/features/garage/components/SetupOverviewCard";
 import { listMotorcyclesByUserId } from "@/src/features/garage/repositories/motorcycle.repository";
 import { getProfileById } from "@/src/features/profile/repositories/profile.repository";
 import {
@@ -24,7 +23,7 @@ import {
   AppScreen,
   AppText,
 } from "@/src/shared/components";
-import { spacing, theme } from "@/src/shared/theme";
+import { radius, spacing, theme } from "@/src/shared/theme";
 import type {
   MotorcycleRow,
   ProfileRow,
@@ -59,11 +58,12 @@ export function GarageScreen() {
     [motorcycles],
   );
 
-  const featuredMotorcycleName =
-    motorcycleCards[0]?.name ||
-    (motorcycleCards[0]
-      ? `${motorcycleCards[0].brand} ${motorcycleCards[0].model}`
-      : "Belum ada motor");
+  const featuredMotorcycle = motorcycleCards[0] ?? null;
+
+  const featuredMotorcycleName = featuredMotorcycle
+    ? featuredMotorcycle.name ||
+      `${featuredMotorcycle.brand} ${featuredMotorcycle.model}`.trim()
+    : "Belum ada build";
 
   useFocusEffect(
     useCallback(() => {
@@ -166,12 +166,60 @@ export function GarageScreen() {
         onPressEdit={() => router.push("/edit-garage")}
       />
 
+      <View style={styles.statsRow}>
+        <GarageStatItem label="Builds" value={motorcycles.length} />
+        <GarageStatItem label="Parts" value={0} />
+        <GarageStatItem label="Gallery" value={0} />
+        <GarageStatItem label="Posts" value={0} />
+      </View>
+
+      <View style={styles.featuredSection}>
+        <View style={styles.sectionHeader}>
+          <AppText variant="title">Featured Build</AppText>
+        </View>
+
+        <Pressable
+          disabled={!featuredMotorcycle}
+          onPress={() => {
+            if (featuredMotorcycle) {
+              router.push(`/motorcycle/${featuredMotorcycle.id}`);
+            }
+          }}
+          style={({ pressed }) => [
+            styles.featuredCard,
+            pressed && featuredMotorcycle && styles.pressed,
+          ]}
+        >
+          <View style={styles.featuredIcon}>
+            <Star size={18} color={theme.primary} />
+          </View>
+
+          <View style={styles.featuredText}>
+            <AppText variant="bodyMedium" numberOfLines={1}>
+              {featuredMotorcycleName}
+            </AppText>
+
+            <AppText
+              variant="caption"
+              tone="secondary"
+              style={styles.featuredMeta}
+            >
+              {featuredMotorcycle
+                ? `${featuredMotorcycle.year} · ${
+                    featuredMotorcycle.engineInfo ?? "Mesin belum diisi"
+                  }`
+                : "Tambahkan motor pertama untuk menampilkan build unggulan."}
+            </AppText>
+          </View>
+        </Pressable>
+      </View>
+
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <AppText variant="title">My Motorcycles</AppText>
+          <AppText variant="title">Builds</AppText>
 
           <Pressable
-            onPress={() => router.push("/(create)/add-motorcycle")}
+            onPress={() => router.push("/add-motorcycle")}
             style={({ pressed }) => [styles.viewAll, pressed && styles.pressed]}
           >
             <AppText variant="caption" tone="accent">
@@ -183,18 +231,18 @@ export function GarageScreen() {
 
         {motorcycleCards.length === 0 ? (
           <AppCard style={styles.emptyCard}>
-            <AppText variant="bodyMedium">Belum ada motor</AppText>
+            <AppText variant="bodyMedium">Belum ada build</AppText>
             <AppText
               variant="caption"
               tone="secondary"
               style={styles.emptyText}
             >
-              Tambahkan motor pertama agar Garage kamu mulai terisi.
+              Tambahkan build pertama agar Garage kamu mulai terisi.
             </AppText>
 
             <AppButton
               style={styles.emptyButton}
-              onPress={() => router.push("/(create)/add-motorcycle")}
+              onPress={() => router.push("/add-motorcycle")}
             >
               Tambah Motor
             </AppButton>
@@ -214,20 +262,71 @@ export function GarageScreen() {
           </ScrollView>
         )}
       </View>
-
-      <View style={styles.section}>
-        <SetupOverviewCard
-          partsCount={0}
-          motorcyclesCount={motorcycles.length}
-          categoriesCount={0}
-          featuredMotorcycleName={featuredMotorcycleName}
-        />
-      </View>
     </AppScreen>
   );
 }
 
+function GarageStatItem({ label, value }: { label: string; value: number }) {
+  return (
+    <View style={styles.statItem}>
+      <AppText variant="bodyMedium">{value}</AppText>
+      <AppText variant="caption" tone="secondary" style={styles.statLabel}>
+        {label}
+      </AppText>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  statsRow: {
+    marginTop: spacing.section,
+    borderRadius: radius.xl,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  statItem: {
+    flex: 1,
+    alignItems: "center",
+    gap: 2,
+  },
+  statLabel: {
+    marginTop: 2,
+  },
+  featuredSection: {
+    marginTop: spacing.section,
+  },
+  featuredCard: {
+    minHeight: 82,
+    borderRadius: radius.xl,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    padding: spacing.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  featuredIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.pill,
+    backgroundColor: theme.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  featuredText: {
+    flex: 1,
+  },
+  featuredMeta: {
+    marginTop: spacing.xs,
+    lineHeight: 18,
+  },
   section: {
     marginTop: spacing.section,
   },
