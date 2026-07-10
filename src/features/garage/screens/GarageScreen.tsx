@@ -16,6 +16,7 @@ import {
   type GarageMotorcycleCardData,
 } from "@/src/features/garage/components/GarageMotorcycleCard";
 import { listMotorcyclesByUserId } from "@/src/features/garage/repositories/motorcycle.repository";
+import { listPartsByMotorcycleId } from "@/src/features/garage/repositories/motorcyclePart.repository";
 import { getProfileById } from "@/src/features/profile/repositories/profile.repository";
 import {
   AppButton,
@@ -50,6 +51,7 @@ export function GarageScreen() {
 
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [motorcycles, setMotorcycles] = useState<MotorcycleRow[]>([]);
+  const [totalPartsCount, setTotalPartsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -71,10 +73,12 @@ export function GarageScreen() {
 
       async function loadGarageData() {
         if (!user) {
+          setProfile(null);
+          setMotorcycles([]);
+          setTotalPartsCount(0);
           setLoading(false);
           return;
         }
-
         try {
           setLoading(true);
           setErrorMessage(null);
@@ -84,9 +88,21 @@ export function GarageScreen() {
             listMotorcyclesByUserId(user.id),
           ]);
 
+          const partsByMotorcycle = await Promise.all(
+            motorcycleData.map((motorcycle) =>
+              listPartsByMotorcycleId(motorcycle.id),
+            ),
+          );
+
+          const partsCount = partsByMotorcycle.reduce(
+            (total, parts) => total + parts.length,
+            0,
+          );
+
           if (isActive) {
             setProfile(profileData);
             setMotorcycles(motorcycleData);
+            setTotalPartsCount(partsCount);
           }
         } catch (error) {
           const message =
@@ -168,7 +184,7 @@ export function GarageScreen() {
 
       <View style={styles.statsRow}>
         <GarageStatItem label="Builds" value={motorcycles.length} />
-        <GarageStatItem label="Parts" value={0} />
+        <GarageStatItem label="Parts" value={totalPartsCount} />
         <GarageStatItem label="Gallery" value={0} />
         <GarageStatItem label="Posts" value={0} />
       </View>
