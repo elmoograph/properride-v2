@@ -80,7 +80,10 @@ export function AppSelect({
             <View style={styles.sheetHeader}>
               <AppText variant="title">{label}</AppText>
 
-              <Pressable onPress={onClose} hitSlop={12}>
+              <Pressable
+                onPress={onClose}
+                hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+              >
                 <AppText variant="caption" tone="accent">
                   Tutup
                 </AppText>

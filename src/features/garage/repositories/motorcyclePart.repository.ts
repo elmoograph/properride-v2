@@ -13,6 +13,13 @@ export type CreateMotorcyclePartPayload = {
   description?: string | null;
 };
 
+export type UpdateMotorcyclePartPayload = Partial<{
+  category: string;
+  brand: string;
+  name: string;
+  description: string | null;
+}>;
+
 export async function listPartsByMotorcycleId(
   motorcycleId: string,
 ): Promise<MotorcyclePartRow[]> {
@@ -134,6 +141,40 @@ export async function createPartArchivedTimelineItem({
       title,
       description,
     })
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function getMotorcyclePartById(
+  partId: string,
+): Promise<MotorcyclePartRow | null> {
+  const { data, error } = await supabase
+    .from("motorcycle_parts")
+    .select("*")
+    .eq("id", partId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function updateMotorcyclePartById(
+  partId: string,
+  payload: UpdateMotorcyclePartPayload,
+): Promise<MotorcyclePartRow> {
+  const { data, error } = await supabase
+    .from("motorcycle_parts")
+    .update(payload)
+    .eq("id", partId)
     .select("*")
     .single();
 

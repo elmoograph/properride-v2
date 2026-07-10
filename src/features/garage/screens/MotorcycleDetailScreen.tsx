@@ -447,7 +447,14 @@ function SetupPartsTab({
                 {isExpanded ? (
                   <View style={styles.partList}>
                     {group.parts.map((part) => (
-                      <View key={part.id} style={styles.partRow}>
+                      <Pressable
+                        key={part.id}
+                        onPress={() => router.push(`/part/edit/${part.id}`)}
+                        style={({ pressed }) => [
+                          styles.partRow,
+                          pressed && styles.pressed,
+                        ]}
+                      >
                         <View style={styles.partThumbnail}>
                           <Package size={18} color={theme.primary} />
                         </View>
@@ -496,7 +503,7 @@ function SetupPartsTab({
                             <Archive size={16} color={theme.primary} />
                           )}
                         </Pressable>
-                      </View>
+                      </Pressable>
                     ))}
                   </View>
                 ) : null}

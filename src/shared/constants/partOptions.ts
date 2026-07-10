@@ -355,7 +355,6 @@ const partBrandsByCategory: Record<string, string[]> = {
     "VND",
     "JPA",
     "Nemo",
-    "Custom",
     "Other",
     "Custom",
   ],
