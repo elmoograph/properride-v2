@@ -18,6 +18,7 @@ import {
 import { listMotorcyclesByUserId } from "@/src/features/garage/repositories/motorcycle.repository";
 import { listPartsByMotorcycleId } from "@/src/features/garage/repositories/motorcyclePart.repository";
 import { listGalleryItemsByMotorcycleId } from "@/src/features/garage/repositories/motorcycleGallery.repository";
+import { listPostsByUserId } from "@/src/features/feed/repositories/post.repository";
 import { getProfileById } from "@/src/features/profile/repositories/profile.repository";
 import {
   AppButton,
@@ -54,6 +55,7 @@ export function GarageScreen() {
   const [motorcycles, setMotorcycles] = useState<MotorcycleRow[]>([]);
   const [totalPartsCount, setTotalPartsCount] = useState(0);
   const [totalGalleryCount, setTotalGalleryCount] = useState(0);
+  const [totalPostsCount, setTotalPostsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -79,6 +81,7 @@ export function GarageScreen() {
           setMotorcycles([]);
           setTotalPartsCount(0);
           setTotalGalleryCount(0);
+          setTotalPostsCount(0);
           setLoading(false);
           return;
         }
@@ -86,9 +89,10 @@ export function GarageScreen() {
           setLoading(true);
           setErrorMessage(null);
 
-          const [profileData, motorcycleData] = await Promise.all([
+          const [profileData, motorcycleData, postData] = await Promise.all([
             getProfileById(user.id),
             listMotorcyclesByUserId(user.id),
+            listPostsByUserId(user.id),
           ]);
 
           const [partsByMotorcycle, galleryByMotorcycle] = await Promise.all([
@@ -119,6 +123,7 @@ export function GarageScreen() {
             setMotorcycles(motorcycleData);
             setTotalPartsCount(partsCount);
             setTotalGalleryCount(galleryCount);
+            setTotalPostsCount(postData.length);
           }
         } catch (error) {
           const message =
@@ -202,7 +207,7 @@ export function GarageScreen() {
         <GarageStatItem label="Builds" value={motorcycles.length} />
         <GarageStatItem label="Parts" value={totalPartsCount} />
         <GarageStatItem label="Gallery" value={totalGalleryCount} />
-        <GarageStatItem label="Posts" value={0} />
+        <GarageStatItem label="Posts" value={totalPostsCount} />
       </View>
 
       <View style={styles.featuredSection}>
