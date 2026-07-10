@@ -1,13 +1,13 @@
 import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { Camera, ChevronLeft } from "lucide-react-native";
-import { useCallback, useState } from "react";
+import { ChevronLeft } from "lucide-react-native";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Pressable,
   StyleSheet,
+  TextInput,
   View,
 } from "react-native";
 
@@ -17,29 +17,51 @@ import {
 } from "@/src/features/garage/repositories/motorcycle.repository";
 import {
   AppButton,
-  AppInput,
   AppScreen,
+  AppSelect,
   AppText,
+  ImageUploadBox,
 } from "@/src/shared/components";
+import {
+  motorcycleBrandOptions,
+  motorcycleModelOptionsByBrand,
+  motorcycleYearOptions,
+} from "@/src/shared/constants/motorcycleOptions";
 import {
   createStorageImagePath,
   uploadImageToStorage,
 } from "@/src/shared/lib/storage";
-import { radius, spacing, theme } from "@/src/shared/theme";
+import { radius, spacing, theme, typography } from "@/src/shared/theme";
 import type { MotorcycleRow } from "@/src/shared/types/database.types";
+
+type SelectField = "brand" | "model" | "year" | null;
 
 export function EditMotorcycleScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [motorcycle, setMotorcycle] = useState<MotorcycleRow | null>(null);
-  const [name, setName] = useState("");
-  const [engineInfo, setEngineInfo] = useState("");
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
+  const [brand, setBrand] = useState("");
+  const [model, setModel] = useState("");
+  const [year, setYear] = useState("");
+  const [engineCc, setEngineCc] = useState("");
+  const [coverImageUri, setCoverImageUri] = useState<string | null>(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
+  const [activeSelect, setActiveSelect] = useState<SelectField>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [screenError, setScreenError] = useState<string | null>(null);
+
+  const modelOptions = useMemo(() => {
+    if (!brand) {
+      return [];
+    }
+
+    return motorcycleModelOptionsByBrand[brand] ?? [];
+  }, [brand]);
+
+  const isSubmitDisabled =
+    saving || !brand || !model || !year || !engineCc.trim();
 
   useFocusEffect(
     useCallback(() => {
@@ -64,10 +86,14 @@ export function EditMotorcycleScreen() {
 
           if (isActive) {
             setMotorcycle(motorcycleData);
-            setName(motorcycleData.name ?? "");
-            setEngineInfo(motorcycleData.engine_info ?? "");
-            setImageUrl(motorcycleData.image_url ?? null);
-            setSelectedImageUri(null);
+            setBrand(motorcycleData.brand);
+            setModel(motorcycleData.model);
+            setYear(motorcycleData.year);
+            setEngineCc(
+              motorcycleData.engine_cc ? String(motorcycleData.engine_cc) : "",
+            );
+            setCurrentImageUrl(motorcycleData.image_url ?? null);
+            setCoverImageUri(null);
           }
         } catch (error) {
           const message =
@@ -93,13 +119,23 @@ export function EditMotorcycleScreen() {
     }, [id]),
   );
 
-  async function handlePickImage() {
+  function handleBrandChange(nextBrand: string) {
+    setBrand(nextBrand);
+    setModel("");
+  }
+
+  function handleEngineCcChange(value: string) {
+    const numericValue = value.replace(/\D/g, "");
+    setEngineCc(numericValue);
+  }
+
+  async function handlePickCoverImage() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permission.granted) {
       Alert.alert(
-        "Izin galeri dibutuhkan",
-        "Berikan izin akses galeri untuk mengganti foto motor.",
+        "Izin diperlukan",
+        "Izinkan akses galeri untuk memilih foto motor.",
       );
       return;
     }
@@ -110,9 +146,8 @@ export function EditMotorcycleScreen() {
       result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.84,
-        base64: false,
+        aspect: [16, 9],
+        quality: 0.88,
       });
     } catch (error) {
       const message =
@@ -131,19 +166,19 @@ export function EditMotorcycleScreen() {
       return;
     }
 
-    const uri = result.assets[0]?.uri;
+    const imageUri = result.assets[0]?.uri;
 
-    if (!uri) {
-      Alert.alert("Foto tidak valid", "Coba pilih foto lain.");
+    if (!imageUri) {
+      Alert.alert("Foto tidak valid", "Pilih foto lain untuk cover motor.");
       return;
     }
 
-    setSelectedImageUri(uri);
+    setCoverImageUri(imageUri);
   }
 
-  async function uploadImageIfSelected() {
-    if (!motorcycle || !selectedImageUri) {
-      return imageUrl;
+  async function uploadCoverImageIfSelected() {
+    if (!motorcycle || !coverImageUri) {
+      return currentImageUrl;
     }
 
     const path = createStorageImagePath({
@@ -153,28 +188,32 @@ export function EditMotorcycleScreen() {
     });
 
     return uploadImageToStorage({
-      uri: selectedImageUri,
+      uri: coverImageUri,
       path,
     });
   }
 
-  async function handleSave() {
-    if (!motorcycle) {
+  async function handleSaveMotorcycle() {
+    if (isSubmitDisabled || !motorcycle) {
       return;
     }
 
     try {
       setSaving(true);
 
-      const uploadedImageUrl = await uploadImageIfSelected();
+      const uploadedImageUrl = await uploadCoverImageIfSelected();
 
       await updateMotorcycleById(motorcycle.id, {
-        name: name.trim() || null,
-        engine_info: engineInfo.trim() || null,
+        brand,
+        model,
+        year,
+        engine_cc: Number(engineCc),
+        engine_info: `${engineCc} cc`,
         image_url: uploadedImageUrl,
+        name: `${brand} ${model}`,
       });
 
-      Alert.alert("Motor tersimpan", "Detail motor berhasil diperbarui.", [
+      Alert.alert("Motor tersimpan", "Motor berhasil diperbarui.", [
         {
           text: "OK",
           onPress: () => router.back(),
@@ -191,8 +230,6 @@ export function EditMotorcycleScreen() {
       setSaving(false);
     }
   }
-
-  const previewImageUri = selectedImageUri ?? imageUrl;
 
   if (loading) {
     return (
@@ -233,61 +270,107 @@ export function EditMotorcycleScreen() {
         <View style={styles.headerText}>
           <AppText variant="titleLarge">Edit Motorcycle</AppText>
           <AppText tone="secondary" style={styles.subtitle}>
-            Ubah foto utama dan detail ringan motor ini.
+            Perbarui foto dan detail motor yang tampil di Garage.
           </AppText>
         </View>
       </View>
 
       <View style={styles.form}>
-        <Pressable
-          onPress={handlePickImage}
-          style={({ pressed }) => [
-            styles.imagePicker,
-            pressed && styles.pressed,
-          ]}
-        >
-          {previewImageUri ? (
-            <Image source={{ uri: previewImageUri }} style={styles.image} />
-          ) : (
-            <View style={styles.imagePlaceholder}>
-              <Camera size={28} color={theme.primary} />
-              <AppText
-                variant="caption"
-                tone="secondary"
-                style={styles.imagePlaceholderText}
-              >
-                Tambahkan foto utama motor.
-              </AppText>
-            </View>
-          )}
+        <ImageUploadBox
+          title={
+            coverImageUri || currentImageUrl
+              ? "Foto motor sudah dipilih"
+              : "Tambah foto motor"
+          }
+          description={
+            coverImageUri
+              ? "Foto baru ini akan menjadi cover motor di Garage."
+              : currentImageUrl
+                ? "Foto ini sedang dipakai sebagai cover motor."
+                : "Pilih foto terbaik untuk cover motor kamu."
+          }
+          imageUri={coverImageUri ?? currentImageUrl}
+          onPress={handlePickCoverImage}
+        />
 
-          <View style={styles.imageBadge}>
-            <Camera size={15} color={theme.primary} />
-            <AppText variant="caption" tone="accent">
-              Ganti Foto
-            </AppText>
+        <View style={styles.row}>
+          <View style={styles.rowItem}>
+            <AppSelect
+              label="Brand"
+              placeholder="Pilih brand"
+              value={brand}
+              options={motorcycleBrandOptions}
+              visible={activeSelect === "brand"}
+              onOpen={() => setActiveSelect("brand")}
+              onClose={() => setActiveSelect(null)}
+              onChange={handleBrandChange}
+            />
           </View>
-        </Pressable>
 
-        <AppInput
-          label="Nama Build"
-          placeholder="Contoh: NMAX Daily Touring"
-          value={name}
-          onChangeText={setName}
-          helperText="Opsional. Nama ini tampil sebagai nama build."
-        />
+          <View style={styles.rowItem}>
+            <AppSelect
+              label="Model"
+              placeholder={brand ? "Pilih model" : "Pilih brand dulu"}
+              value={model}
+              options={modelOptions}
+              visible={activeSelect === "model"}
+              onOpen={() => setActiveSelect("model")}
+              onClose={() => setActiveSelect(null)}
+              onChange={setModel}
+              disabled={!brand}
+            />
+          </View>
+        </View>
 
-        <AppInput
-          label="Info Mesin"
-          placeholder="Contoh: 155 cc, bore up 183 cc, standard harian"
-          value={engineInfo}
-          onChangeText={setEngineInfo}
-          helperText="Opsional. Isi detail mesin atau setup utama."
-        />
+        <View style={styles.row}>
+          <View style={styles.rowItem}>
+            <AppSelect
+              label="Tahun"
+              placeholder="Pilih tahun"
+              value={year}
+              options={motorcycleYearOptions}
+              visible={activeSelect === "year"}
+              onOpen={() => setActiveSelect("year")}
+              onClose={() => setActiveSelect(null)}
+              onChange={setYear}
+            />
+          </View>
 
-        <AppButton onPress={handleSave} disabled={saving}>
-          {saving ? "Menyimpan..." : "Simpan Motor"}
+          <View style={styles.rowItem}>
+            <AppText variant="caption" tone="secondary" style={styles.label}>
+              Mesin
+            </AppText>
+
+            <View style={styles.engineInputWrap}>
+              <TextInput
+                value={engineCc}
+                onChangeText={handleEngineCcChange}
+                placeholder="155"
+                placeholderTextColor={theme.textMuted}
+                keyboardType="number-pad"
+                maxLength={4}
+                selectionColor={theme.primary}
+                style={styles.engineInput}
+              />
+
+              <AppText tone="secondary">cc</AppText>
+            </View>
+          </View>
+        </View>
+
+        <AppButton
+          disabled={isSubmitDisabled}
+          loading={saving}
+          style={styles.submitButton}
+          onPress={handleSaveMotorcycle}
+        >
+          Simpan Motor
         </AppButton>
+
+        <AppText variant="caption" tone="muted" style={styles.note}>
+          Semua field wajib diisi. Perubahan akan tampil di Garage, Featured
+          Build, dan Motorcycle Detail.
+        </AppText>
       </View>
     </AppScreen>
   );
@@ -318,44 +401,41 @@ const styles = StyleSheet.create({
   },
   form: {
     marginTop: spacing.section,
-    gap: spacing.lg,
+    gap: spacing.xl,
   },
-  imagePicker: {
-    height: 210,
-    borderRadius: radius.xl,
+  row: {
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  rowItem: {
+    flex: 1,
+  },
+  label: {
+    marginLeft: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  engineInputWrap: {
+    minHeight: 48,
+    borderRadius: radius.lg,
     backgroundColor: theme.surface,
     borderWidth: 1,
     borderColor: theme.borderSoft,
-    overflow: "hidden",
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-  },
-  imagePlaceholder: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: theme.surfaceSoft,
-    paddingHorizontal: spacing.lg,
-  },
-  imagePlaceholderText: {
-    marginTop: spacing.sm,
-    textAlign: "center",
-  },
-  imageBadge: {
-    position: "absolute",
-    right: spacing.md,
-    bottom: spacing.md,
-    minHeight: 34,
-    borderRadius: radius.pill,
-    backgroundColor: "rgba(18, 24, 33, 0.92)",
-    borderWidth: 1,
-    borderColor: theme.primary,
     paddingHorizontal: spacing.md,
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.xs,
+    gap: spacing.sm,
+  },
+  engineInput: {
+    flex: 1,
+    color: theme.textPrimary,
+    ...typography.body,
+  },
+  submitButton: {
+    marginTop: spacing.sm,
+  },
+  note: {
+    textAlign: "center",
+    paddingHorizontal: spacing.md,
   },
   centerState: {
     flex: 1,
@@ -366,8 +446,5 @@ const styles = StyleSheet.create({
   centerText: {
     maxWidth: 280,
     textAlign: "center",
-  },
-  pressed: {
-    opacity: 0.82,
   },
 });
