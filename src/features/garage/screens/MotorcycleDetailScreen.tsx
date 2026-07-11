@@ -25,7 +25,7 @@ import {
   AppScreen,
   AppText,
 } from "@/src/shared/components";
-import { GarageGalleryStrip } from "@/src/features/garage/components/GarageGalleryStrip";
+import { GarageGalleryGrid } from "@/src/features/garage/components/GarageGalleryGrid";
 import { radius, spacing, theme } from "@/src/shared/theme";
 import { getMotorcycleById } from "@/src/features/garage/repositories/motorcycle.repository";
 import type {
@@ -628,7 +628,7 @@ function GalleryTab({
           </AppText>
         </AppCard>
       ) : (
-        <GarageGalleryStrip
+        <GarageGalleryGrid
           items={gallery.map((item) => ({
             id: item.id,
             imageUrl: item.image_url,
