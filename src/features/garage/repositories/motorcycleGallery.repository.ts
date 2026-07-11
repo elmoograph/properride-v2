@@ -72,3 +72,23 @@ export async function deleteGalleryItemById(galleryItemId: string) {
     throw error;
   }
 }
+
+export async function updateGalleryItemCaptionById(
+  galleryItemId: string,
+  caption: string | null,
+): Promise<MotorcycleGalleryItemRow> {
+  const { data, error } = await supabase
+    .from("motorcycle_gallery_items")
+    .update({
+      caption,
+    })
+    .eq("id", galleryItemId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}

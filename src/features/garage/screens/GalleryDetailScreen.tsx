@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, Trash2 } from "lucide-react-native";
+import { Check, ChevronLeft, Pencil, Trash2, X } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -7,15 +7,17 @@ import {
   Image,
   Pressable,
   StyleSheet,
+  TextInput,
   View,
 } from "react-native";
 
 import {
   deleteGalleryItemById,
   getGalleryItemById,
+  updateGalleryItemCaptionById,
 } from "@/src/features/garage/repositories/motorcycleGallery.repository";
 import { AppButton, AppScreen, AppText } from "@/src/shared/components";
-import { radius, spacing, theme } from "@/src/shared/theme";
+import { radius, spacing, theme, typography } from "@/src/shared/theme";
 import type { MotorcycleGalleryItemRow } from "@/src/shared/types/database.types";
 
 export function GalleryDetailScreen() {
@@ -26,6 +28,9 @@ export function GalleryDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [screenError, setScreenError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [editingCaption, setEditingCaption] = useState(false);
+  const [captionDraft, setCaptionDraft] = useState("");
+  const [savingCaption, setSavingCaption] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -50,6 +55,8 @@ export function GalleryDetailScreen() {
 
           if (isActive) {
             setGalleryItem(data);
+            setCaptionDraft(data.caption ?? "");
+            setEditingCaption(false);
           }
         } catch (error) {
           const message =
@@ -74,6 +81,51 @@ export function GalleryDetailScreen() {
       };
     }, [id]),
   );
+
+  function handleStartEditCaption() {
+    if (!galleryItem) {
+      return;
+    }
+
+    setCaptionDraft(galleryItem.caption ?? "");
+    setEditingCaption(true);
+  }
+
+  function handleCancelEditCaption() {
+    setCaptionDraft(galleryItem?.caption ?? "");
+    setEditingCaption(false);
+  }
+
+  async function handleSaveCaption() {
+    if (!galleryItem) {
+      return;
+    }
+
+    try {
+      setSavingCaption(true);
+
+      const cleanCaption = captionDraft.trim();
+      const updatedGalleryItem = await updateGalleryItemCaptionById(
+        galleryItem.id,
+        cleanCaption || null,
+      );
+
+      setGalleryItem(updatedGalleryItem);
+      setCaptionDraft(updatedGalleryItem.caption ?? "");
+      setEditingCaption(false);
+
+      Alert.alert("Caption tersimpan", "Caption gallery berhasil diperbarui.");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat menyimpan caption.";
+
+      Alert.alert("Gagal menyimpan caption", message);
+    } finally {
+      setSavingCaption(false);
+    }
+  }
 
   function handleDeletePhoto() {
     if (!galleryItem) {
@@ -168,14 +220,81 @@ export function GalleryDetailScreen() {
             Gallery
           </AppText>
 
-          {galleryItem.caption ? (
-            <AppText variant="bodyMedium" style={styles.caption}>
-              {galleryItem.caption}
-            </AppText>
+          {editingCaption ? (
+            <View style={styles.captionEditor}>
+              <TextInput
+                value={captionDraft}
+                onChangeText={setCaptionDraft}
+                placeholder="Tulis caption gallery..."
+                placeholderTextColor={theme.textMuted}
+                selectionColor={theme.primary}
+                multiline
+                style={styles.captionInput}
+              />
+
+              <View style={styles.captionActions}>
+                <Pressable
+                  disabled={savingCaption}
+                  onPress={handleCancelEditCaption}
+                  style={({ pressed }) => [
+                    styles.captionActionButton,
+                    pressed && styles.pressed,
+                    savingCaption && styles.disabledButton,
+                  ]}
+                >
+                  <X size={15} color={theme.textMuted} />
+                  <AppText variant="caption" tone="secondary">
+                    Batal
+                  </AppText>
+                </Pressable>
+
+                <Pressable
+                  disabled={savingCaption}
+                  onPress={handleSaveCaption}
+                  style={({ pressed }) => [
+                    styles.captionActionButton,
+                    styles.captionSaveButton,
+                    pressed && styles.pressed,
+                    savingCaption && styles.disabledButton,
+                  ]}
+                >
+                  {savingCaption ? (
+                    <ActivityIndicator size="small" color={theme.primary} />
+                  ) : (
+                    <Check size={15} color={theme.primary} />
+                  )}
+
+                  <AppText variant="caption" tone="accent">
+                    {savingCaption ? "Menyimpan..." : "Simpan"}
+                  </AppText>
+                </Pressable>
+              </View>
+            </View>
           ) : (
-            <AppText variant="bodyMedium" style={styles.caption}>
-              Tidak ada caption.
-            </AppText>
+            <>
+              {galleryItem.caption ? (
+                <AppText variant="bodyMedium" style={styles.caption}>
+                  {galleryItem.caption}
+                </AppText>
+              ) : (
+                <AppText variant="bodyMedium" style={styles.caption}>
+                  Tidak ada caption.
+                </AppText>
+              )}
+
+              <Pressable
+                onPress={handleStartEditCaption}
+                style={({ pressed }) => [
+                  styles.editCaptionButton,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Pencil size={15} color={theme.primary} />
+                <AppText variant="caption" tone="accent">
+                  Edit Caption
+                </AppText>
+              </Pressable>
+            </>
           )}
 
           <AppText variant="caption" tone="muted" style={styles.dateText}>
@@ -283,5 +402,55 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.82,
+  },
+  editCaptionButton: {
+    marginTop: spacing.md,
+    minHeight: 36,
+    alignSelf: "flex-start",
+    borderRadius: radius.pill,
+    backgroundColor: theme.primarySoft,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    paddingHorizontal: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  captionEditor: {
+    marginTop: spacing.md,
+    gap: spacing.md,
+  },
+  captionInput: {
+    minHeight: 96,
+    borderRadius: radius.lg,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    color: theme.textPrimary,
+    textAlignVertical: "top",
+    ...typography.body,
+  },
+  captionActions: {
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  captionActionButton: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: radius.pill,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    paddingHorizontal: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+  },
+  captionSaveButton: {
+    backgroundColor: theme.primarySoft,
+    borderColor: theme.primary,
   },
 });
