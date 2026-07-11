@@ -61,3 +61,14 @@ export async function getGalleryItemById(
 
   return data;
 }
+
+export async function deleteGalleryItemById(galleryItemId: string) {
+  const { error } = await supabase
+    .from("motorcycle_gallery_items")
+    .delete()
+    .eq("id", galleryItemId);
+
+  if (error) {
+    throw error;
+  }
+}

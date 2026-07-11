@@ -1,15 +1,19 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft, Trash2 } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Pressable,
   StyleSheet,
   View,
 } from "react-native";
 
-import { getGalleryItemById } from "@/src/features/garage/repositories/motorcycleGallery.repository";
+import {
+  deleteGalleryItemById,
+  getGalleryItemById,
+} from "@/src/features/garage/repositories/motorcycleGallery.repository";
 import { AppButton, AppScreen, AppText } from "@/src/shared/components";
 import { radius, spacing, theme } from "@/src/shared/theme";
 import type { MotorcycleGalleryItemRow } from "@/src/shared/types/database.types";
@@ -21,6 +25,7 @@ export function GalleryDetailScreen() {
     useState<MotorcycleGalleryItemRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [screenError, setScreenError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -69,6 +74,54 @@ export function GalleryDetailScreen() {
       };
     }, [id]),
   );
+
+  function handleDeletePhoto() {
+    if (!galleryItem) {
+      return;
+    }
+
+    Alert.alert(
+      "Hapus foto?",
+      "Foto ini akan dihapus dari Gallery motor. Aksi ini tidak bisa dibatalkan.",
+      [
+        {
+          text: "Batal",
+          style: "cancel",
+        },
+        {
+          text: "Hapus",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setDeleting(true);
+
+              await deleteGalleryItemById(galleryItem.id);
+
+              Alert.alert(
+                "Foto dihapus",
+                "Foto berhasil dihapus dari Gallery.",
+                [
+                  {
+                    text: "OK",
+                    onPress: () => router.back(),
+                  },
+                ],
+              );
+            } catch (error) {
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : "Terjadi kesalahan saat menghapus foto.";
+
+              Alert.alert("Gagal menghapus foto", message);
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ],
+    );
+  }
 
   if (loading) {
     return (
@@ -128,6 +181,26 @@ export function GalleryDetailScreen() {
           <AppText variant="caption" tone="muted" style={styles.dateText}>
             {new Date(galleryItem.created_at).toLocaleDateString("id-ID")}
           </AppText>
+
+          <Pressable
+            disabled={deleting}
+            onPress={handleDeletePhoto}
+            style={({ pressed }) => [
+              styles.deleteButton,
+              pressed && styles.pressed,
+              deleting && styles.disabledButton,
+            ]}
+          >
+            {deleting ? (
+              <ActivityIndicator size="small" color={theme.danger} />
+            ) : (
+              <Trash2 size={16} color={theme.danger} />
+            )}
+
+            <AppText variant="caption" style={styles.deleteText}>
+              {deleting ? "Menghapus..." : "Hapus Foto"}
+            </AppText>
+          </Pressable>
         </View>
       </View>
     </AppScreen>
@@ -188,5 +261,27 @@ const styles = StyleSheet.create({
   centerText: {
     maxWidth: 280,
     textAlign: "center",
+  },
+  deleteButton: {
+    marginTop: spacing.lg,
+    minHeight: 40,
+    borderRadius: radius.pill,
+    backgroundColor: "rgba(239, 68, 68, 0.12)",
+    borderWidth: 1,
+    borderColor: theme.danger,
+    paddingHorizontal: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+  },
+  deleteText: {
+    color: theme.danger,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  pressed: {
+    opacity: 0.82,
   },
 });
