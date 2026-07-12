@@ -285,19 +285,20 @@ export function AddGalleryScreen() {
 
       const uploadedImageUrl = await uploadSelectedGalleryImage();
 
-      await createMotorcycleGalleryItem({
-        motorcycleId: motorcycle.id,
-        userId: user.id,
-        imageUrl: uploadedImageUrl,
-        caption: null,
-      });
-
-      await createPostWithMedia({
+      const createdPost = await createPostWithMedia({
         userId: user.id,
         motorcycleId: motorcycle.id,
         caption: postCaption.trim(),
         visibility: "public",
         mediaUrls: [uploadedImageUrl],
+      });
+
+      await createMotorcycleGalleryItem({
+        motorcycleId: motorcycle.id,
+        userId: user.id,
+        imageUrl: uploadedImageUrl,
+        caption: null,
+        relatedPostId: createdPost.id,
       });
 
       Alert.alert(

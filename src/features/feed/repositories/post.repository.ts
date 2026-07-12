@@ -117,7 +117,7 @@ export async function listPostsByUserId(userId: string): Promise<FeedPost[]> {
     `,
     )
     .eq("user_id", userId)
-    .neq("status", "deleted")
+    .eq("status", "published")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -155,7 +155,7 @@ export async function listSavedPostsByUserId(
     `,
     )
     .in("id", postIds)
-    .neq("status", "deleted");
+    .eq("status", "published");
 
   if (postsError) {
     throw postsError;
@@ -196,7 +196,7 @@ export async function listLikedPostsByUserId(
     `,
     )
     .in("id", postIds)
-    .neq("status", "deleted");
+    .eq("status", "published");
 
   if (postsError) {
     throw postsError;
@@ -219,7 +219,7 @@ export async function getPostById(id: string): Promise<FeedPost | null> {
     `,
     )
     .eq("id", id)
-    .neq("status", "deleted")
+    .eq("status", "published")
     .maybeSingle();
 
   if (error) {
@@ -332,4 +332,41 @@ function formatPostDate(value: string) {
     day: "numeric",
     month: "short",
   });
+}
+
+export async function updatePostCaptionById(
+  postId: string,
+  caption: string,
+): Promise<PostRow> {
+  const { data, error } = await supabase
+    .from("posts")
+    .update({
+      caption,
+    })
+    .eq("id", postId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function archivePostById(postId: string): Promise<PostRow> {
+  const { data, error } = await supabase
+    .from("posts")
+    .update({
+      status: "archived",
+    })
+    .eq("id", postId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
 }

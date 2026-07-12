@@ -60,6 +60,8 @@ export type MotorcycleGalleryItemRow = {
   user_id: string;
   image_url: string;
   caption: string | null;
+  related_post_id: string | null;
+  status: "active" | "archived" | "deleted";
   created_at: string;
 };
 
@@ -186,6 +188,8 @@ export type Database = {
           user_id: string;
           image_url: string;
           caption?: string | null;
+          related_post_id?: string | null;
+          status?: "active" | "archived" | "deleted";
           created_at?: string;
         };
         Update: Partial<

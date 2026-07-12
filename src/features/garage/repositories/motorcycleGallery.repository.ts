@@ -6,6 +6,7 @@ export type CreateMotorcycleGalleryItemPayload = {
   userId: string;
   imageUrl: string;
   caption?: string | null;
+  relatedPostId?: string | null;
 };
 
 export async function listGalleryItemsByMotorcycleId(motorcycleId: string) {
@@ -13,6 +14,7 @@ export async function listGalleryItemsByMotorcycleId(motorcycleId: string) {
     .from("motorcycle_gallery_items")
     .select("*")
     .eq("motorcycle_id", motorcycleId)
+    .eq("status", "active")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -27,6 +29,7 @@ export async function createMotorcycleGalleryItem({
   userId,
   imageUrl,
   caption = null,
+  relatedPostId = null,
 }: CreateMotorcycleGalleryItemPayload): Promise<MotorcycleGalleryItemRow> {
   const { data, error } = await supabase
     .from("motorcycle_gallery_items")
@@ -35,6 +38,8 @@ export async function createMotorcycleGalleryItem({
       user_id: userId,
       image_url: imageUrl,
       caption,
+      related_post_id: relatedPostId,
+      status: "active",
     })
     .select("*")
     .single();
@@ -81,6 +86,25 @@ export async function updateGalleryItemCaptionById(
     .from("motorcycle_gallery_items")
     .update({
       caption,
+    })
+    .eq("id", galleryItemId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function archiveGalleryItemById(
+  galleryItemId: string,
+): Promise<MotorcycleGalleryItemRow> {
+  const { data, error } = await supabase
+    .from("motorcycle_gallery_items")
+    .update({
+      status: "archived",
     })
     .eq("id", galleryItemId)
     .select("*")
