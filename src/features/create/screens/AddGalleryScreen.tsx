@@ -1,6 +1,6 @@
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft, X } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -169,6 +169,12 @@ export function AddGalleryScreen() {
     }
 
     setSelectedImageUris(imageUris);
+  }
+
+  function handleRemoveSelectedImage(imageIndex: number) {
+    setSelectedImageUris((current) =>
+      current.filter((_, index) => index !== imageIndex),
+    );
   }
 
   function handleBack() {
@@ -427,6 +433,7 @@ export function AddGalleryScreen() {
           <GalleryContentStep
             selectedImageUris={selectedImageUris}
             onPickMedia={handlePickMedia}
+            onRemoveSelectedImage={handleRemoveSelectedImage}
           />
         ) : null}
 
@@ -467,9 +474,11 @@ export function AddGalleryScreen() {
 function GalleryContentStep({
   selectedImageUris,
   onPickMedia,
+  onRemoveSelectedImage,
 }: {
   selectedImageUris: string[];
   onPickMedia: () => void;
+  onRemoveSelectedImage: (imageIndex: number) => void;
 }) {
   return (
     <View style={styles.stepContent}>
@@ -536,6 +545,22 @@ function GalleryContentStep({
                     {index + 1}
                   </AppText>
                 </View>
+
+                <Pressable
+                  onPress={() => onRemoveSelectedImage(index)}
+                  hitSlop={{
+                    top: 8,
+                    right: 8,
+                    bottom: 8,
+                    left: 8,
+                  }}
+                  style={({ pressed }) => [
+                    styles.removePreviewButton,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <X size={13} color={theme.textPrimary} />
+                </Pressable>
               </View>
             ))}
           </View>
@@ -899,5 +924,18 @@ const styles = StyleSheet.create({
   },
   selectedPreviewBadgeText: {
     color: theme.textPrimary,
+  },
+  removePreviewButton: {
+    position: "absolute",
+    top: spacing.xs,
+    left: spacing.xs,
+    width: 24,
+    height: 24,
+    borderRadius: radius.pill,
+    backgroundColor: "rgba(239, 68, 68, 0.9)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.24)",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
