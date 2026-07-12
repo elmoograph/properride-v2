@@ -45,7 +45,6 @@ export function AddGalleryScreen() {
 
   const [step, setStep] = useState<GalleryStep>("gallery");
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
-  const [galleryCaption, setGalleryCaption] = useState("");
   const [postCaption, setPostCaption] = useState("");
   const [shareChoice, setShareChoice] = useState<ShareChoice | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -245,7 +244,7 @@ export function AddGalleryScreen() {
         motorcycleId: motorcycle.id,
         userId: user.id,
         imageUrl: uploadedImageUrl,
-        caption: galleryCaption.trim() || null,
+        caption: null,
       });
 
       Alert.alert(
@@ -290,7 +289,7 @@ export function AddGalleryScreen() {
         motorcycleId: motorcycle.id,
         userId: user.id,
         imageUrl: uploadedImageUrl,
-        caption: galleryCaption.trim() || null,
+        caption: null,
       });
 
       await createPostWithMedia({
@@ -406,9 +405,7 @@ export function AddGalleryScreen() {
         {isGalleryStep ? (
           <GalleryContentStep
             selectedImageUri={selectedImageUri}
-            galleryCaption={galleryCaption}
             onPickMedia={handlePickMedia}
-            onChangeGalleryCaption={setGalleryCaption}
           />
         ) : null}
 
@@ -448,14 +445,10 @@ export function AddGalleryScreen() {
 
 function GalleryContentStep({
   selectedImageUri,
-  galleryCaption,
   onPickMedia,
-  onChangeGalleryCaption,
 }: {
   selectedImageUri: string | null;
-  galleryCaption: string;
   onPickMedia: () => void;
-  onChangeGalleryCaption: (value: string) => void;
 }) {
   return (
     <View style={styles.stepContent}>
@@ -485,16 +478,6 @@ function GalleryContentStep({
         }
         imageUri={selectedImageUri}
         onPress={onPickMedia}
-      />
-
-      <AppInput
-        label="Caption Gallery"
-        placeholder="Contoh: Detail setup exhaust terbaru..."
-        value={galleryCaption}
-        onChangeText={onChangeGalleryCaption}
-        multiline
-        maxLength={160}
-        helperText={`${galleryCaption.length}/160 · Opsional`}
       />
     </View>
   );
@@ -802,5 +785,13 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.82,
+  },
+  captionInfoCard: {
+    backgroundColor: theme.surfaceSoft,
+    borderColor: theme.borderSoft,
+    alignItems: "flex-start",
+  },
+  captionInfoText: {
+    marginTop: spacing.xs,
   },
 });
