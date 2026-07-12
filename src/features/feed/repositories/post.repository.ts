@@ -370,3 +370,34 @@ export async function archivePostById(postId: string): Promise<PostRow> {
 
   return data;
 }
+
+export async function countPostMediaByPostId(postId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from("post_media")
+    .select("*", { count: "exact", head: true })
+    .eq("post_id", postId);
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
+}
+
+export async function deletePostMediaByPostIdAndUrl({
+  postId,
+  mediaUrl,
+}: {
+  postId: string;
+  mediaUrl: string;
+}) {
+  const { error } = await supabase
+    .from("post_media")
+    .delete()
+    .eq("post_id", postId)
+    .eq("media_url", mediaUrl);
+
+  if (error) {
+    throw error;
+  }
+}

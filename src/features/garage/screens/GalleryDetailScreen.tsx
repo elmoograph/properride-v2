@@ -24,10 +24,13 @@ import {
 
 import {
   archiveGalleryItemById,
+  archiveGalleryItemsByRelatedPostId,
   getGalleryItemById,
 } from "@/src/features/garage/repositories/motorcycleGallery.repository";
 import {
   archivePostById,
+  countPostMediaByPostId,
+  deletePostMediaByPostIdAndUrl,
   getPostById,
   updatePostCaptionById,
 } from "@/src/features/feed/repositories/post.repository";
@@ -192,41 +195,63 @@ export function GalleryDetailScreen() {
 
     setMenuVisible(false);
 
-    const message = galleryItem.related_post_id
-      ? "Foto ini akan diarsipkan dari Gallery dan Post terkait akan diarsipkan dari Feed."
+    const hasRelatedPost = Boolean(galleryItem.related_post_id);
+
+    const title = hasRelatedPost ? "Hapus foto dari Post?" : "Archive foto?";
+    const message = hasRelatedPost
+      ? "Foto ini akan dihapus dari Gallery dan dari carousel Feed. Post tetap ada jika masih memiliki foto lain."
       : "Foto ini akan diarsipkan dari Gallery motor.";
 
-    Alert.alert("Archive foto?", message, [
+    Alert.alert(title, message, [
       {
         text: "Batal",
         style: "cancel",
       },
       {
-        text: "Archive",
+        text: hasRelatedPost ? "Hapus Foto" : "Archive",
         style: "destructive",
         onPress: async () => {
           try {
             setDeleting(true);
 
-            await archiveGalleryItemById(galleryItem.id);
-
             if (galleryItem.related_post_id) {
-              await archivePostById(galleryItem.related_post_id);
+              const mediaCount = await countPostMediaByPostId(
+                galleryItem.related_post_id,
+              );
+
+              await archiveGalleryItemById(galleryItem.id);
+
+              if (mediaCount <= 1) {
+                await archivePostById(galleryItem.related_post_id);
+              } else {
+                await deletePostMediaByPostIdAndUrl({
+                  postId: galleryItem.related_post_id,
+                  mediaUrl: galleryItem.image_url,
+                });
+              }
+            } else {
+              await archiveGalleryItemById(galleryItem.id);
             }
 
-            Alert.alert("Foto diarsipkan", "Foto berhasil diarsipkan.", [
-              {
-                text: "OK",
-                onPress: () => router.back(),
-              },
-            ]);
+            Alert.alert(
+              hasRelatedPost ? "Foto dihapus" : "Foto diarsipkan",
+              hasRelatedPost
+                ? "Foto berhasil dihapus dari Gallery dan Feed."
+                : "Foto berhasil diarsipkan dari Gallery.",
+              [
+                {
+                  text: "OK",
+                  onPress: () => router.back(),
+                },
+              ],
+            );
           } catch (error) {
             const message =
               error instanceof Error
                 ? error.message
-                : "Terjadi kesalahan saat mengarsipkan foto.";
+                : "Terjadi kesalahan saat memproses foto.";
 
-            Alert.alert("Gagal mengarsipkan foto", message);
+            Alert.alert("Gagal memproses foto", message);
           } finally {
             setDeleting(false);
           }
@@ -405,7 +430,13 @@ export function GalleryDetailScreen() {
                   )}
 
                   <AppText variant="caption" style={styles.archiveText}>
-                    {deleting ? "Mengarsipkan..." : "Archive Foto"}
+                    {deleting
+                      ? hasRelatedPost
+                        ? "Menghapus..."
+                        : "Mengarsipkan..."
+                      : hasRelatedPost
+                        ? "Hapus Foto dari Post"
+                        : "Archive Foto"}
                   </AppText>
                 </Pressable>
               </View>
