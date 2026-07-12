@@ -29,9 +29,11 @@ import {
 } from "@/src/shared/components";
 import { radius, spacing, theme } from "@/src/shared/theme";
 import type {
+  MotorcycleGalleryItemRow,
   MotorcycleRow,
   ProfileRow,
 } from "@/src/shared/types/database.types";
+import { GarageGalleryGrid } from "@/src/features/garage/components/GarageGalleryGrid";
 
 function toGarageMotorcycleCardData(
   motorcycle: MotorcycleRow,
@@ -56,6 +58,9 @@ export function GarageScreen() {
   const [motorcycles, setMotorcycles] = useState<MotorcycleRow[]>([]);
   const [totalPartsCount, setTotalPartsCount] = useState(0);
   const [totalGalleryCount, setTotalGalleryCount] = useState(0);
+  const [recentGalleryItems, setRecentGalleryItems] = useState<
+    MotorcycleGalleryItemRow[]
+  >([]);
   const [totalPostsCount, setTotalPostsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -82,6 +87,7 @@ export function GarageScreen() {
           setMotorcycles([]);
           setTotalPartsCount(0);
           setTotalGalleryCount(0);
+          setRecentGalleryItems([]);
           setTotalPostsCount(0);
           setLoading(false);
           return;
@@ -119,11 +125,21 @@ export function GarageScreen() {
             0,
           );
 
+          const recentGallery = galleryByMotorcycle
+            .flat()
+            .sort(
+              (a, b) =>
+                new Date(b.created_at).getTime() -
+                new Date(a.created_at).getTime(),
+            )
+            .slice(0, 6);
+
           if (isActive) {
             setProfile(profileData);
             setMotorcycles(motorcycleData);
             setTotalPartsCount(partsCount);
             setTotalGalleryCount(galleryCount);
+            setRecentGalleryItems(recentGallery);
             setTotalPostsCount(postData.length);
           }
         } catch (error) {
@@ -308,6 +324,40 @@ export function GarageScreen() {
           </ScrollView>
         )}
       </View>
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <View>
+            <AppText variant="title">Garage Gallery</AppText>
+            <AppText
+              variant="caption"
+              tone="secondary"
+              style={styles.sectionSubtitle}
+            >
+              Foto terbaru dari semua build di Garage kamu.
+            </AppText>
+          </View>
+        </View>
+
+        {recentGalleryItems.length === 0 ? (
+          <AppCard style={styles.emptyCard}>
+            <AppText variant="bodyMedium">Belum ada foto gallery</AppText>
+            <AppText
+              variant="caption"
+              tone="secondary"
+              style={styles.emptyText}
+            >
+              Tambahkan foto dari detail motor agar Gallery Garage mulai terisi.
+            </AppText>
+          </AppCard>
+        ) : (
+          <GarageGalleryGrid
+            items={recentGalleryItems.map((item) => ({
+              id: item.id,
+              imageUrl: item.image_url,
+            }))}
+          />
+        )}
+      </View>
     </AppScreen>
   );
 }
@@ -419,5 +469,8 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.82,
+  },
+  sectionSubtitle: {
+    marginTop: spacing.xs,
   },
 });
