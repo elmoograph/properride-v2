@@ -1,4 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import {
   Archive,
   Bookmark,
@@ -30,12 +31,18 @@ import {
   getPostById,
   updatePostCaptionById,
 } from "@/src/features/feed/repositories/post.repository";
+import {
+  getPostInteractionState,
+  togglePostLike,
+  togglePostSave,
+} from "@/src/features/feed/repositories/postInteraction.repository";
 import { AppButton, AppScreen, AppText } from "@/src/shared/components";
 import { radius, spacing, theme, typography } from "@/src/shared/theme";
 import type { MotorcycleGalleryItemRow } from "@/src/shared/types/database.types";
 
 export function GalleryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { user } = useAuth();
 
   const [galleryItem, setGalleryItem] =
     useState<MotorcycleGalleryItemRow | null>(null);
@@ -47,6 +54,11 @@ export function GalleryDetailScreen() {
   const [savingCaption, setSavingCaption] = useState(false);
   const [relatedPostCaption, setRelatedPostCaption] = useState("");
   const [menuVisible, setMenuVisible] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [updatingLike, setUpdatingLike] = useState(false);
+  const [updatingSave, setUpdatingSave] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -69,10 +81,25 @@ export function GalleryDetailScreen() {
             throw new Error("Foto gallery tidak ditemukan.");
           }
           let postCaption = "";
+          let postLiked = false;
+          let postSaved = false;
+          let postLikesCount = 0;
 
           if (data.related_post_id) {
             const relatedPost = await getPostById(data.related_post_id);
             postCaption = relatedPost?.caption ?? "";
+            postLikesCount = relatedPost?.likesCount ?? 0;
+
+            if (user) {
+              const interactionState = await getPostInteractionState({
+                postId: data.related_post_id,
+                userId: user.id,
+              });
+
+              postLiked = interactionState.liked;
+              postSaved = interactionState.saved;
+              postLikesCount = interactionState.likesCount;
+            }
           }
 
           if (isActive) {
@@ -80,6 +107,9 @@ export function GalleryDetailScreen() {
             setRelatedPostCaption(postCaption);
             setCaptionDraft(postCaption);
             setEditingCaption(false);
+            setLiked(postLiked);
+            setSaved(postSaved);
+            setLikesCount(postLikesCount);
           }
         } catch (error) {
           const message =
@@ -102,7 +132,7 @@ export function GalleryDetailScreen() {
       return () => {
         isActive = false;
       };
-    }, [id]),
+    }, [id, user]),
   );
 
   function handleStartEditCaption() {
@@ -203,6 +233,96 @@ export function GalleryDetailScreen() {
         },
       },
     ]);
+  }
+
+  async function handleToggleLike() {
+    if (!galleryItem?.related_post_id) {
+      return;
+    }
+
+    if (!user) {
+      Alert.alert(
+        "Sesi tidak aktif",
+        "Silakan masuk kembali untuk menyukai post.",
+      );
+      router.replace("/(auth)/login");
+      return;
+    }
+
+    try {
+      setUpdatingLike(true);
+
+      const nextLiked = await togglePostLike({
+        postId: galleryItem.related_post_id,
+        userId: user.id,
+        currentlyLiked: liked,
+      });
+
+      setLiked(nextLiked);
+      setLikesCount((current) => {
+        if (nextLiked) {
+          return current + 1;
+        }
+
+        return Math.max(current - 1, 0);
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat memperbarui like.";
+
+      Alert.alert("Gagal memperbarui like", message);
+    } finally {
+      setUpdatingLike(false);
+    }
+  }
+
+  async function handleToggleSave() {
+    if (!galleryItem?.related_post_id) {
+      return;
+    }
+
+    if (!user) {
+      Alert.alert(
+        "Sesi tidak aktif",
+        "Silakan masuk kembali untuk menyimpan post.",
+      );
+      router.replace("/(auth)/login");
+      return;
+    }
+
+    try {
+      setUpdatingSave(true);
+
+      const nextSaved = await togglePostSave({
+        postId: galleryItem.related_post_id,
+        userId: user.id,
+        currentlySaved: saved,
+      });
+
+      setSaved(nextSaved);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat menyimpan post.";
+
+      Alert.alert("Gagal menyimpan post", message);
+    } finally {
+      setUpdatingSave(false);
+    }
+  }
+
+  function handleSharePost() {
+    if (!galleryItem?.related_post_id) {
+      return;
+    }
+
+    Alert.alert(
+      "Share",
+      "Fitur share post akan kita sambungkan di tahap berikutnya.",
+    );
   }
 
   if (loading) {
@@ -363,19 +483,57 @@ export function GalleryDetailScreen() {
                 </AppText>
               ) : null}
 
-              <View style={styles.socialActions}>
-                <Pressable style={styles.socialButton}>
-                  <Heart size={22} color={theme.textPrimary} />
-                </Pressable>
+              {hasRelatedPost ? (
+                <View style={styles.socialActions}>
+                  <Pressable
+                    disabled={updatingLike}
+                    onPress={handleToggleLike}
+                    style={({ pressed }) => [
+                      styles.socialButton,
+                      pressed && styles.pressed,
+                      updatingLike && styles.disabledButton,
+                    ]}
+                  >
+                    <Heart
+                      size={22}
+                      color={liked ? theme.primary : theme.textPrimary}
+                      fill={liked ? theme.primary : "transparent"}
+                    />
+                  </Pressable>
 
-                <Pressable style={styles.socialButton}>
-                  <Bookmark size={22} color={theme.textPrimary} />
-                </Pressable>
+                  <Pressable
+                    disabled={updatingSave}
+                    onPress={handleToggleSave}
+                    style={({ pressed }) => [
+                      styles.socialButton,
+                      pressed && styles.pressed,
+                      updatingSave && styles.disabledButton,
+                    ]}
+                  >
+                    <Bookmark
+                      size={22}
+                      color={saved ? theme.primary : theme.textPrimary}
+                      fill={saved ? theme.primary : "transparent"}
+                    />
+                  </Pressable>
 
-                <Pressable style={styles.socialButton}>
-                  <Share2 size={22} color={theme.textPrimary} />
-                </Pressable>
-              </View>
+                  <Pressable
+                    onPress={handleSharePost}
+                    style={({ pressed }) => [
+                      styles.socialButton,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Share2 size={22} color={theme.textPrimary} />
+                  </Pressable>
+
+                  {likesCount > 0 ? (
+                    <AppText variant="caption" style={styles.likesCountText}>
+                      {likesCount} suka
+                    </AppText>
+                  ) : null}
+                </View>
+              ) : null}
             </>
           )}
         </View>
@@ -535,5 +693,14 @@ const styles = StyleSheet.create({
   },
   captionPrimaryText: {
     color: theme.background,
+  },
+  likesCountText: {
+    color: theme.textPrimary,
+    textShadowColor: "rgba(0, 0, 0, 0.72)",
+    textShadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    textShadowRadius: 6,
   },
 });
