@@ -6,6 +6,8 @@ export type PostStatus = "published" | "archived" | "deleted";
 
 export type PostMediaType = "image" | "video";
 
+export type GalleryMediaType = "image" | "video";
+
 export type TimelineAction =
   | "part_added"
   | "part_removed"
@@ -59,6 +61,7 @@ export type MotorcycleGalleryItemRow = {
   motorcycle_id: string;
   user_id: string;
   image_url: string;
+  media_type: GalleryMediaType;
   caption: string | null;
   related_post_id: string | null;
   status: "active" | "archived" | "deleted";
@@ -188,6 +191,7 @@ export type Database = {
           user_id: string;
           image_url: string;
           caption?: string | null;
+          media_type?: GalleryMediaType;
           related_post_id?: string | null;
           status?: "active" | "archived" | "deleted";
           created_at?: string;

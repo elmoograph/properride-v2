@@ -1,10 +1,14 @@
 import { supabase } from "@/src/shared/lib/supabase";
-import type { MotorcycleGalleryItemRow } from "@/src/shared/types/database.types";
+import type {
+  GalleryMediaType,
+  MotorcycleGalleryItemRow,
+} from "@/src/shared/types/database.types";
 
 export type CreateMotorcycleGalleryItemPayload = {
   motorcycleId: string;
   userId: string;
   imageUrl: string;
+  mediaType?: GalleryMediaType;
   caption?: string | null;
   relatedPostId?: string | null;
 };
@@ -28,6 +32,7 @@ export async function createMotorcycleGalleryItem({
   motorcycleId,
   userId,
   imageUrl,
+  mediaType = "image",
   caption = null,
   relatedPostId = null,
 }: CreateMotorcycleGalleryItemPayload): Promise<MotorcycleGalleryItemRow> {
@@ -37,6 +42,7 @@ export async function createMotorcycleGalleryItem({
       motorcycle_id: motorcycleId,
       user_id: userId,
       image_url: imageUrl,
+      media_type: mediaType,
       caption,
       related_post_id: relatedPostId,
       status: "active",
