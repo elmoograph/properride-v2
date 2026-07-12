@@ -44,7 +44,7 @@ export function AddGalleryScreen() {
   const [motorcycleError, setMotorcycleError] = useState<string | null>(null);
 
   const [step, setStep] = useState<GalleryStep>("gallery");
-  const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
+  const [selectedImageUris, setSelectedImageUris] = useState<string[]>([]);
   const [postCaption, setPostCaption] = useState("");
   const [shareChoice, setShareChoice] = useState<ShareChoice | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -132,7 +132,7 @@ export function AddGalleryScreen() {
   const isSubmitDisabled =
     submitting ||
     !motorcycle ||
-    (isGalleryStep && !selectedImageUri) ||
+    (isGalleryStep && selectedImageUris.length === 0) ||
     (isShareStep && !shareChoice) ||
     (isPostStep && !postCaption.trim());
 
@@ -149,7 +149,8 @@ export function AddGalleryScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      allowsEditing: true,
+      allowsMultipleSelection: true,
+      selectionLimit: 6,
       quality: 0.88,
     });
 
@@ -157,14 +158,16 @@ export function AddGalleryScreen() {
       return;
     }
 
-    const imageUri = result.assets[0]?.uri;
+    const imageUris = result.assets
+      .map((asset) => asset.uri)
+      .filter((uri): uri is string => Boolean(uri));
 
-    if (!imageUri) {
+    if (imageUris.length === 0) {
       Alert.alert("Foto tidak valid", "Pilih foto lain untuk Gallery.");
       return;
     }
 
-    setSelectedImageUri(imageUri);
+    setSelectedImageUris(imageUris);
   }
 
   function handleBack() {
@@ -207,21 +210,29 @@ export function AddGalleryScreen() {
     saveGalleryAndPost();
   }
 
-  async function uploadSelectedGalleryImage() {
-    if (!user || !motorcycle || !selectedImageUri) {
+  async function uploadSelectedGalleryImages() {
+    if (!user || !motorcycle || selectedImageUris.length === 0) {
       throw new Error("Foto gallery belum siap untuk di-upload.");
     }
 
-    const path = createStorageImagePath({
-      userId: user.id,
-      folder: "gallery",
-      ownerId: motorcycle.id,
-    });
+    const uploadedImageUrls: string[] = [];
 
-    return uploadImageToStorage({
-      uri: selectedImageUri,
-      path,
-    });
+    for (const selectedImageUri of selectedImageUris) {
+      const path = createStorageImagePath({
+        userId: user.id,
+        folder: "gallery",
+        ownerId: motorcycle.id,
+      });
+
+      const uploadedImageUrl = await uploadImageToStorage({
+        uri: selectedImageUri,
+        path,
+      });
+
+      uploadedImageUrls.push(uploadedImageUrl);
+    }
+
+    return uploadedImageUrls;
   }
 
   async function saveGalleryOnly() {
@@ -238,18 +249,22 @@ export function AddGalleryScreen() {
     try {
       setSubmitting(true);
 
-      const uploadedImageUrl = await uploadSelectedGalleryImage();
+      const uploadedImageUrls = await uploadSelectedGalleryImages();
 
-      await createMotorcycleGalleryItem({
-        motorcycleId: motorcycle.id,
-        userId: user.id,
-        imageUrl: uploadedImageUrl,
-        caption: null,
-      });
+      await Promise.all(
+        uploadedImageUrls.map((uploadedImageUrl) =>
+          createMotorcycleGalleryItem({
+            motorcycleId: motorcycle.id,
+            userId: user.id,
+            imageUrl: uploadedImageUrl,
+            caption: null,
+          }),
+        ),
+      );
 
       Alert.alert(
         "Gallery tersimpan",
-        `Foto berhasil ditambahkan ke Gallery ${motorcycle.brand} ${motorcycle.model}.`,
+        `${uploadedImageUrls.length} foto berhasil ditambahkan ke Gallery ${motorcycle.brand} ${motorcycle.model}.`,
         [
           {
             text: "OK",
@@ -283,27 +298,31 @@ export function AddGalleryScreen() {
     try {
       setSubmitting(true);
 
-      const uploadedImageUrl = await uploadSelectedGalleryImage();
+      const uploadedImageUrls = await uploadSelectedGalleryImages();
 
       const createdPost = await createPostWithMedia({
         userId: user.id,
         motorcycleId: motorcycle.id,
         caption: postCaption.trim(),
         visibility: "public",
-        mediaUrls: [uploadedImageUrl],
+        mediaUrls: uploadedImageUrls,
       });
 
-      await createMotorcycleGalleryItem({
-        motorcycleId: motorcycle.id,
-        userId: user.id,
-        imageUrl: uploadedImageUrl,
-        caption: null,
-        relatedPostId: createdPost.id,
-      });
+      await Promise.all(
+        uploadedImageUrls.map((uploadedImageUrl) =>
+          createMotorcycleGalleryItem({
+            motorcycleId: motorcycle.id,
+            userId: user.id,
+            imageUrl: uploadedImageUrl,
+            caption: null,
+            relatedPostId: createdPost.id,
+          }),
+        ),
+      );
 
       Alert.alert(
         "Gallery dan Post tersimpan",
-        `Foto berhasil ditambahkan ke Gallery ${motorcycle.brand} ${motorcycle.model} dan dibagikan ke Feed.`,
+        `${uploadedImageUrls.length} foto berhasil ditambahkan ke Gallery ${motorcycle.brand} ${motorcycle.model} dan dibagikan ke Feed.`,
         [
           {
             text: "OK",
@@ -405,7 +424,7 @@ export function AddGalleryScreen() {
       <View style={styles.content}>
         {isGalleryStep ? (
           <GalleryContentStep
-            selectedImageUri={selectedImageUri}
+            selectedImageUris={selectedImageUris}
             onPickMedia={handlePickMedia}
           />
         ) : null}
@@ -445,10 +464,10 @@ export function AddGalleryScreen() {
 }
 
 function GalleryContentStep({
-  selectedImageUri,
+  selectedImageUris,
   onPickMedia,
 }: {
-  selectedImageUri: string | null;
+  selectedImageUris: string[];
   onPickMedia: () => void;
 }) {
   return (
@@ -471,13 +490,17 @@ function GalleryContentStep({
       </View>
 
       <ImageUploadBox
-        title={selectedImageUri ? "Foto sudah dipilih" : "Tambah foto gallery"}
-        description={
-          selectedImageUri
-            ? "Foto siap di-upload ke Gallery motor."
-            : "Pilih satu foto terbaik untuk galeri motor ini."
+        title={
+          selectedImageUris.length > 0
+            ? `${selectedImageUris.length} foto dipilih`
+            : "Tambah foto gallery"
         }
-        imageUri={selectedImageUri}
+        description={
+          selectedImageUris.length > 0
+            ? "Foto siap di-upload ke Gallery motor."
+            : "Pilih hingga 6 foto terbaik untuk galeri motor ini."
+        }
+        imageUri={selectedImageUris[0] ?? null}
         onPress={onPickMedia}
       />
     </View>
