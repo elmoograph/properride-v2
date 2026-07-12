@@ -116,3 +116,21 @@ export async function archiveGalleryItemById(
 
   return data;
 }
+
+export async function archiveGalleryItemsByRelatedPostId(
+  relatedPostId: string,
+): Promise<MotorcycleGalleryItemRow[]> {
+  const { data, error } = await supabase
+    .from("motorcycle_gallery_items")
+    .update({
+      status: "archived",
+    })
+    .eq("related_post_id", relatedPostId)
+    .select("*");
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}

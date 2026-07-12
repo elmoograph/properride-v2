@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   BackHandler,
+  Image,
   Pressable,
   StyleSheet,
   View,
@@ -480,12 +481,12 @@ function GalleryContentStep({
             tone="secondary"
             style={styles.sectionSubtitle}
           >
-            Pilih foto yang akan masuk ke Gallery motor.
+            Pilih hingga 6 foto yang akan masuk ke Gallery motor.
           </AppText>
         </View>
 
         <AppText variant="caption" tone="muted">
-          Wajib
+          Maks. 6
         </AppText>
       </View>
 
@@ -503,6 +504,43 @@ function GalleryContentStep({
         imageUri={selectedImageUris[0] ?? null}
         onPress={onPickMedia}
       />
+      {selectedImageUris.length > 0 ? (
+        <View style={styles.selectedPreviewBlock}>
+          <View style={styles.selectedPreviewHeader}>
+            <AppText variant="caption" tone="secondary">
+              Foto dipilih
+            </AppText>
+
+            <AppText variant="caption" tone="muted">
+              {selectedImageUris.length}/6
+            </AppText>
+          </View>
+
+          <View style={styles.selectedPreviewGrid}>
+            {selectedImageUris.map((imageUri, index) => (
+              <View
+                key={`${imageUri}-${index}`}
+                style={styles.selectedPreviewItem}
+              >
+                <Image
+                  source={{ uri: imageUri }}
+                  style={styles.selectedPreviewImage}
+                  resizeMode="cover"
+                />
+
+                <View style={styles.selectedPreviewBadge}>
+                  <AppText
+                    variant="tiny"
+                    style={styles.selectedPreviewBadgeText}
+                  >
+                    {index + 1}
+                  </AppText>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -817,5 +855,49 @@ const styles = StyleSheet.create({
   },
   captionInfoText: {
     marginTop: spacing.xs,
+  },
+  selectedPreviewBlock: {
+    gap: spacing.sm,
+  },
+  selectedPreviewHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.xs,
+  },
+  selectedPreviewGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  selectedPreviewItem: {
+    width: "31.8%",
+    aspectRatio: 1,
+    borderRadius: radius.lg,
+    backgroundColor: theme.surfaceSoft,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    overflow: "hidden",
+  },
+  selectedPreviewImage: {
+    width: "100%",
+    height: "100%",
+  },
+  selectedPreviewBadge: {
+    position: "absolute",
+    top: spacing.xs,
+    right: spacing.xs,
+    minWidth: 22,
+    height: 22,
+    borderRadius: radius.pill,
+    backgroundColor: "rgba(11, 15, 20, 0.78)",
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.xs,
+  },
+  selectedPreviewBadgeText: {
+    color: theme.textPrimary,
   },
 });
