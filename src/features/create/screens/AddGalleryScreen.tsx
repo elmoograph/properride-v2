@@ -32,6 +32,10 @@ import {
 } from "@/src/shared/lib/storage";
 
 type GalleryStep = "gallery" | "share" | "post";
+type SelectedGalleryMedia = {
+  uri: string;
+  mediaType: "image" | "video";
+};
 type ShareChoice = "gallery_only" | "share_to_feed";
 const TEMP_GALLERY_IMAGE_URL =
   "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=1200";
@@ -45,7 +49,9 @@ export function AddGalleryScreen() {
   const [motorcycleError, setMotorcycleError] = useState<string | null>(null);
 
   const [step, setStep] = useState<GalleryStep>("gallery");
-  const [selectedImageUris, setSelectedImageUris] = useState<string[]>([]);
+  const [selectedMedia, setSelectedMedia] = useState<SelectedGalleryMedia[]>(
+    [],
+  );
   const [postCaption, setPostCaption] = useState("");
   const [shareChoice, setShareChoice] = useState<ShareChoice | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -133,7 +139,7 @@ export function AddGalleryScreen() {
   const isSubmitDisabled =
     submitting ||
     !motorcycle ||
-    (isGalleryStep && selectedImageUris.length === 0) ||
+    (isGalleryStep && selectedMedia.length === 0) ||
     (isShareStep && !shareChoice) ||
     (isPostStep && !postCaption.trim());
 
@@ -143,37 +149,50 @@ export function AddGalleryScreen() {
     if (!permission.granted) {
       Alert.alert(
         "Izin diperlukan",
-        "Izinkan akses galeri untuk memilih foto motor.",
+        "Izinkan akses galeri untuk memilih foto atau video motor.",
       );
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ["images", "videos"],
       allowsMultipleSelection: true,
       selectionLimit: 6,
       quality: 0.88,
+      videoMaxDuration: 30,
     });
 
     if (result.canceled) {
       return;
     }
 
-    const imageUris = result.assets
-      .map((asset) => asset.uri)
-      .filter((uri): uri is string => Boolean(uri));
+    const media = result.assets
+      .map((asset): SelectedGalleryMedia | null => {
+        if (!asset.uri) {
+          return null;
+        }
 
-    if (imageUris.length === 0) {
-      Alert.alert("Foto tidak valid", "Pilih foto lain untuk Gallery.");
+        return {
+          uri: asset.uri,
+          mediaType: asset.type === "video" ? "video" : "image",
+        };
+      })
+      .filter((item): item is SelectedGalleryMedia => Boolean(item));
+
+    if (media.length === 0) {
+      Alert.alert(
+        "Media tidak valid",
+        "Pilih foto atau video lain untuk Gallery.",
+      );
       return;
     }
 
-    setSelectedImageUris(imageUris);
+    setSelectedMedia(media);
   }
 
-  function handleRemoveSelectedImage(imageIndex: number) {
-    setSelectedImageUris((current) =>
-      current.filter((_, index) => index !== imageIndex),
+  function handleRemoveSelectedMedia(mediaIndex: number) {
+    setSelectedMedia((current) =>
+      current.filter((_, index) => index !== mediaIndex),
     );
   }
 
@@ -217,29 +236,32 @@ export function AddGalleryScreen() {
     saveGalleryAndPost();
   }
 
-  async function uploadSelectedGalleryImages() {
-    if (!user || !motorcycle || selectedImageUris.length === 0) {
-      throw new Error("Foto gallery belum siap untuk di-upload.");
+  async function uploadSelectedGalleryMedia() {
+    if (!user || !motorcycle || selectedMedia.length === 0) {
+      throw new Error("Media gallery belum siap untuk di-upload.");
     }
 
-    const uploadedImageUrls: string[] = [];
+    const uploadedMedia: Array<SelectedGalleryMedia & { url: string }> = [];
 
-    for (const selectedImageUri of selectedImageUris) {
+    for (const media of selectedMedia) {
       const path = createStorageImagePath({
         userId: user.id,
         folder: "gallery",
         ownerId: motorcycle.id,
       });
 
-      const uploadedImageUrl = await uploadImageToStorage({
-        uri: selectedImageUri,
+      const uploadedUrl = await uploadImageToStorage({
+        uri: media.uri,
         path,
       });
 
-      uploadedImageUrls.push(uploadedImageUrl);
+      uploadedMedia.push({
+        ...media,
+        url: uploadedUrl,
+      });
     }
 
-    return uploadedImageUrls;
+    return uploadedMedia;
   }
 
   async function saveGalleryOnly() {
@@ -256,14 +278,15 @@ export function AddGalleryScreen() {
     try {
       setSubmitting(true);
 
-      const uploadedImageUrls = await uploadSelectedGalleryImages();
+      const uploadedMedia = await uploadSelectedGalleryMedia();
 
       await Promise.all(
-        uploadedImageUrls.map((uploadedImageUrl) =>
+        uploadedMedia.map((media) =>
           createMotorcycleGalleryItem({
             motorcycleId: motorcycle.id,
             userId: user.id,
-            imageUrl: uploadedImageUrl,
+            imageUrl: media.url,
+            mediaType: media.mediaType,
             caption: null,
           }),
         ),
@@ -271,7 +294,7 @@ export function AddGalleryScreen() {
 
       Alert.alert(
         "Gallery tersimpan",
-        `${uploadedImageUrls.length} foto berhasil ditambahkan ke Gallery ${motorcycle.brand} ${motorcycle.model}.`,
+        `${uploadedMedia.length} media berhasil ditambahkan ke Gallery ${motorcycle.brand} ${motorcycle.model}.`,
         [
           {
             text: "OK",
@@ -302,10 +325,21 @@ export function AddGalleryScreen() {
       return;
     }
 
+    const hasVideo = selectedMedia.some((media) => media.mediaType === "video");
+
+    if (hasVideo) {
+      Alert.alert(
+        "Video belum bisa dibagikan ke Feed",
+        "Untuk saat ini, video bisa disimpan ke Gallery saja. Share ke Feed akan kita sambungkan di tahap berikutnya.",
+      );
+      return;
+    }
+
     try {
       setSubmitting(true);
 
-      const uploadedImageUrls = await uploadSelectedGalleryImages();
+      const uploadedMedia = await uploadSelectedGalleryMedia();
+      const uploadedImageUrls = uploadedMedia.map((media) => media.url);
 
       const createdPost = await createPostWithMedia({
         userId: user.id,
@@ -316,11 +350,12 @@ export function AddGalleryScreen() {
       });
 
       await Promise.all(
-        uploadedImageUrls.map((uploadedImageUrl) =>
+        uploadedMedia.map((media) =>
           createMotorcycleGalleryItem({
             motorcycleId: motorcycle.id,
             userId: user.id,
-            imageUrl: uploadedImageUrl,
+            imageUrl: media.url,
+            mediaType: media.mediaType,
             caption: null,
             relatedPostId: createdPost.id,
           }),
@@ -329,7 +364,7 @@ export function AddGalleryScreen() {
 
       Alert.alert(
         "Gallery dan Post tersimpan",
-        `${uploadedImageUrls.length} foto berhasil ditambahkan ke Gallery ${motorcycle.brand} ${motorcycle.model} dan dibagikan ke Feed.`,
+        `${uploadedMedia.length} media berhasil ditambahkan ke Gallery ${motorcycle.brand} ${motorcycle.model} dan dibagikan ke Feed.`,
         [
           {
             text: "OK",
@@ -431,9 +466,9 @@ export function AddGalleryScreen() {
       <View style={styles.content}>
         {isGalleryStep ? (
           <GalleryContentStep
-            selectedImageUris={selectedImageUris}
+            selectedMedia={selectedMedia}
             onPickMedia={handlePickMedia}
-            onRemoveSelectedImage={handleRemoveSelectedImage}
+            onRemoveSelectedMedia={handleRemoveSelectedMedia}
           />
         ) : null}
 
@@ -472,13 +507,13 @@ export function AddGalleryScreen() {
 }
 
 function GalleryContentStep({
-  selectedImageUris,
+  selectedMedia,
   onPickMedia,
-  onRemoveSelectedImage,
+  onRemoveSelectedMedia,
 }: {
-  selectedImageUris: string[];
+  selectedMedia: SelectedGalleryMedia[];
   onPickMedia: () => void;
-  onRemoveSelectedImage: (imageIndex: number) => void;
+  onRemoveSelectedMedia: (mediaIndex: number) => void;
 }) {
   return (
     <View style={styles.stepContent}>
@@ -501,19 +536,21 @@ function GalleryContentStep({
 
       <ImageUploadBox
         title={
-          selectedImageUris.length > 0
-            ? `${selectedImageUris.length} foto dipilih`
-            : "Tambah foto gallery"
+          selectedMedia.length > 0
+            ? `${selectedMedia.length} media dipilih`
+            : "Tambah media gallery"
         }
         description={
-          selectedImageUris.length > 0
-            ? "Foto siap di-upload ke Gallery motor."
-            : "Pilih hingga 6 foto terbaik untuk galeri motor ini."
+          selectedMedia.length > 0
+            ? "Media siap di-upload ke Gallery motor."
+            : "Pilih hingga 6 foto/video terbaik untuk galeri motor ini."
         }
-        imageUri={selectedImageUris[0] ?? null}
+        imageUri={
+          selectedMedia[0]?.mediaType === "image" ? selectedMedia[0].uri : null
+        }
         onPress={onPickMedia}
       />
-      {selectedImageUris.length > 0 ? (
+      {selectedMedia.length > 0 ? (
         <View style={styles.selectedPreviewBlock}>
           <View style={styles.selectedPreviewHeader}>
             <AppText variant="caption" tone="secondary">
@@ -521,21 +558,29 @@ function GalleryContentStep({
             </AppText>
 
             <AppText variant="caption" tone="muted">
-              {selectedImageUris.length}/6
+              {selectedMedia.length}/6
             </AppText>
           </View>
 
           <View style={styles.selectedPreviewGrid}>
-            {selectedImageUris.map((imageUri, index) => (
+            {selectedMedia.map((media, index) => (
               <View
-                key={`${imageUri}-${index}`}
+                key={`${media.uri}-${index}`}
                 style={styles.selectedPreviewItem}
               >
-                <Image
-                  source={{ uri: imageUri }}
-                  style={styles.selectedPreviewImage}
-                  resizeMode="cover"
-                />
+                {media.mediaType === "image" ? (
+                  <Image
+                    source={{ uri: media.uri }}
+                    style={styles.selectedPreviewImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={styles.videoPreviewFallback}>
+                    <AppText variant="caption" tone="secondary">
+                      Video
+                    </AppText>
+                  </View>
+                )}
 
                 <View style={styles.selectedPreviewBadge}>
                   <AppText
@@ -546,8 +591,16 @@ function GalleryContentStep({
                   </AppText>
                 </View>
 
+                {media.mediaType === "video" ? (
+                  <View style={styles.mediaTypePill}>
+                    <AppText variant="tiny" style={styles.mediaTypePillText}>
+                      Video
+                    </AppText>
+                  </View>
+                ) : null}
+
                 <Pressable
-                  onPress={() => onRemoveSelectedImage(index)}
+                  onPress={() => onRemoveSelectedMedia(index)}
                   hitSlop={{
                     top: 8,
                     right: 8,
@@ -937,5 +990,28 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0.24)",
     alignItems: "center",
     justifyContent: "center",
+  },
+  videoPreviewFallback: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: theme.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mediaTypePill: {
+    position: "absolute",
+    left: spacing.xs,
+    bottom: spacing.xs,
+    minHeight: 20,
+    borderRadius: radius.pill,
+    backgroundColor: "rgba(11, 15, 20, 0.78)",
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    paddingHorizontal: spacing.xs,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mediaTypePillText: {
+    color: theme.textPrimary,
   },
 });
