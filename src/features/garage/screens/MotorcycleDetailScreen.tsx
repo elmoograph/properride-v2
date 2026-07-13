@@ -1,13 +1,16 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import {
+  Archive,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Edit3,
   Gauge,
+  MapPin,
   Package,
   Rows3,
-  Archive,
+  Trash2,
+  UserRound,
 } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -27,12 +30,17 @@ import {
 } from "@/src/shared/components";
 import { GarageGalleryGrid } from "@/src/features/garage/components/GarageGalleryGrid";
 import { radius, spacing, theme } from "@/src/shared/theme";
-import { getMotorcycleById } from "@/src/features/garage/repositories/motorcycle.repository";
+import {
+  archiveMotorcycleById,
+  getMotorcycleById,
+} from "@/src/features/garage/repositories/motorcycle.repository";
+import { getProfileById } from "@/src/features/profile/repositories/profile.repository";
 import type {
   MotorcycleGalleryItemRow,
   MotorcyclePartRow,
   MotorcycleRow,
   MotorcycleTimelineItemRow,
+  ProfileRow,
 } from "@/src/shared/types/database.types";
 import { listGalleryItemsByMotorcycleId } from "@/src/features/garage/repositories/motorcycleGallery.repository";
 import {
@@ -71,18 +79,21 @@ type MotorcycleDetailScreenProps = {
   motorcycleId?: string;
   showBackButton?: boolean;
   backFallbackHref?: string;
+  onMotorcycleRemoved?: (motorcycleId: string) => void;
 };
 
 export function MotorcycleDetailScreen({
   motorcycleId,
   showBackButton = true,
   backFallbackHref = "/(tabs)/garage",
+  onMotorcycleRemoved,
 }: MotorcycleDetailScreenProps = {}) {
   const { id } = useLocalSearchParams<{ id: string }>();
   const resolvedMotorcycleId = motorcycleId ?? id;
   const [activeTab, setActiveTab] = useState<DetailTab>("setup");
 
   const [motorcycle, setMotorcycle] = useState<MotorcycleRow | null>(null);
+  const [builderProfile, setBuilderProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -94,6 +105,7 @@ export function MotorcycleDetailScreen({
     [],
   );
   const [archivingPartId, setArchivingPartId] = useState<string | null>(null);
+  const [removingMotorcycle, setRemovingMotorcycle] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -110,16 +122,23 @@ export function MotorcycleDetailScreen({
           setLoading(true);
           setErrorMessage(null);
 
-          const [motorcycleData, partsData, timelineData, galleryData] =
+          const motorcycleData = await getMotorcycleById(resolvedMotorcycleId);
+
+          if (!motorcycleData) {
+            throw new Error("Motor tidak ditemukan.");
+          }
+
+          const [partsData, timelineData, galleryData, profileData] =
             await Promise.all([
-              getMotorcycleById(resolvedMotorcycleId),
               listPartsByMotorcycleId(resolvedMotorcycleId),
               listTimelineItemsByMotorcycleId(resolvedMotorcycleId),
               listGalleryItemsByMotorcycleId(resolvedMotorcycleId),
+              getProfileById(motorcycleData.user_id),
             ]);
 
           if (isActive) {
             setMotorcycle(motorcycleData);
+            setBuilderProfile(profileData);
             setParts(partsData);
             setTimelineItems(timelineData);
             setGalleryItems(galleryData);
@@ -186,6 +205,11 @@ export function MotorcycleDetailScreen({
     motorcycle.engine_info ??
     (motorcycle.engine_cc ? `${motorcycle.engine_cc} cc` : "Belum diisi");
 
+  const builderName =
+    builderProfile?.username ?? builderProfile?.full_name ?? "ProperRide Rider";
+
+  const builderLocation = builderProfile?.location ?? "Lokasi belum diisi";
+
   async function handleArchivePart(part: MotorcyclePartRow) {
     if (!motorcycle) {
       return;
@@ -238,6 +262,60 @@ export function MotorcycleDetailScreen({
     );
   }
 
+  function handleArchiveMotorcycle() {
+    if (!motorcycle) {
+      return;
+    }
+
+    Alert.alert(
+      "Hapus motor dari Build?",
+      "Motor akan diarsipkan dari Build aktif. Data part, gallery, timeline, dan post terkait tidak dihapus permanen.",
+      [
+        {
+          text: "Batal",
+          style: "cancel",
+        },
+        {
+          text: "Hapus Motor",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setRemovingMotorcycle(true);
+
+              await archiveMotorcycleById(motorcycle.id);
+
+              onMotorcycleRemoved?.(motorcycle.id);
+
+              Alert.alert(
+                "Motor dihapus dari Build",
+                "Motor berhasil diarsipkan dari Build aktif.",
+                [
+                  {
+                    text: "OK",
+                    onPress: () => {
+                      if (showBackButton) {
+                        router.replace(backFallbackHref);
+                      }
+                    },
+                  },
+                ],
+              );
+            } catch (error) {
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : "Terjadi kesalahan saat menghapus motor dari Build.";
+
+              Alert.alert("Gagal menghapus motor", message);
+            } finally {
+              setRemovingMotorcycle(false);
+            }
+          },
+        },
+      ],
+    );
+  }
+
   return (
     <AppScreen scrollable padded={false}>
       <View style={styles.heroWrap}>
@@ -275,27 +353,55 @@ export function MotorcycleDetailScreen({
       </View>
 
       <View style={styles.content}>
-        <View style={styles.identity}>
-          <AppText variant="caption" tone="accent">
-            Motorcycle Detail
-          </AppText>
+        <AppCard style={styles.buildInfoCard}>
+          <View style={styles.buildTopRow}>
+            <View style={styles.buildBadge}>
+              <AppText variant="tiny" tone="accent">
+                Build
+              </AppText>
+            </View>
+          </View>
 
           <AppText variant="titleLarge" style={styles.title}>
             {motorcycleTitle}
           </AppText>
-        </View>
+
+          <AppText
+            variant="caption"
+            tone="secondary"
+            style={styles.motorcycleMeta}
+          >
+            {motorcycle.brand} {motorcycle.model} · {motorcycle.year}
+          </AppText>
+
+          <View style={styles.builderInfo}>
+            <View style={styles.builderMetaItem}>
+              <UserRound size={15} color={theme.textMuted} />
+              <AppText variant="caption" tone="secondary" numberOfLines={1}>
+                {builderName}
+              </AppText>
+            </View>
+
+            <View style={styles.builderMetaItem}>
+              <MapPin size={15} color={theme.textMuted} />
+              <AppText variant="caption" tone="secondary" numberOfLines={1}>
+                {builderLocation}
+              </AppText>
+            </View>
+          </View>
+        </AppCard>
 
         <View style={styles.statsRow}>
           <AppCard style={styles.statCard}>
-            <Gauge size={20} color={theme.primary} />
+            <Rows3 size={20} color={theme.primary} />
             <AppText
               variant="caption"
               tone="secondary"
               style={styles.statLabel}
             >
-              Mesin
+              Gallery
             </AppText>
-            <AppText variant="bodyMedium">{motorcycleEngineInfo}</AppText>
+            <AppText variant="bodyMedium">{galleryItems.length} item</AppText>
           </AppCard>
 
           <AppCard style={styles.statCard}>
@@ -311,16 +417,38 @@ export function MotorcycleDetailScreen({
           </AppCard>
 
           <AppCard style={styles.statCard}>
-            <Rows3 size={20} color={theme.primary} />
+            <Gauge size={20} color={theme.primary} />
             <AppText
               variant="caption"
               tone="secondary"
               style={styles.statLabel}
             >
-              Tahun
+              Mesin
             </AppText>
-            <AppText variant="bodyMedium">{motorcycle.year}</AppText>
+            <AppText variant="bodyMedium">{motorcycleEngineInfo}</AppText>
           </AppCard>
+        </View>
+
+        <View style={styles.managementRow}>
+          <Pressable
+            disabled={removingMotorcycle}
+            onPress={handleArchiveMotorcycle}
+            style={({ pressed }) => [
+              styles.removeMotorcycleButton,
+              pressed && styles.pressed,
+              removingMotorcycle && styles.disabledButton,
+            ]}
+          >
+            {removingMotorcycle ? (
+              <ActivityIndicator size="small" color={theme.danger} />
+            ) : (
+              <Trash2 size={16} color={theme.danger} />
+            )}
+
+            <AppText variant="caption" style={styles.removeMotorcycleText}>
+              {removingMotorcycle ? "Memproses..." : "Hapus Motor"}
+            </AppText>
+          </Pressable>
         </View>
 
         <View style={styles.tabBar}>
@@ -926,5 +1054,56 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: spacing.lg,
+  },
+  buildInfoCard: {
+    gap: spacing.sm,
+  },
+  buildTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
+  buildBadge: {
+    minHeight: 24,
+    borderRadius: radius.pill,
+    backgroundColor: theme.primarySoft,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    paddingHorizontal: spacing.sm,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "flex-start",
+  },
+  motorcycleMeta: {
+    marginTop: -spacing.xs,
+  },
+  builderInfo: {
+    marginTop: spacing.xs,
+    gap: spacing.xs,
+  },
+  builderMetaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  managementRow: {
+    marginTop: spacing.md,
+    alignItems: "flex-start",
+  },
+  removeMotorcycleButton: {
+    minHeight: 40,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: "rgba(255, 91, 91, 0.35)",
+    backgroundColor: "rgba(255, 91, 91, 0.08)",
+    paddingHorizontal: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+  },
+  removeMotorcycleText: {
+    color: theme.danger,
   },
 });

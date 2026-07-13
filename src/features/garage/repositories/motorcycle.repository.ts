@@ -28,6 +28,7 @@ export type UpdateMotorcyclePayload = Partial<{
   image_url: string | null;
   status: MotorcycleRow["status"];
   visibility: MotorcycleRow["visibility"];
+  archived_at: string | null;
 }>;
 
 export async function listMotorcyclesByUserId(userId: string) {
@@ -35,6 +36,7 @@ export async function listMotorcyclesByUserId(userId: string) {
     .from("motorcycles")
     .select("*")
     .eq("user_id", userId)
+    .is("archived_at", null)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -110,4 +112,12 @@ export async function createMotorcycle({
   }
 
   return data;
+}
+
+export async function archiveMotorcycleById(
+  motorcycleId: string,
+): Promise<MotorcycleRow> {
+  return updateMotorcycleById(motorcycleId, {
+    archived_at: new Date().toISOString(),
+  });
 }

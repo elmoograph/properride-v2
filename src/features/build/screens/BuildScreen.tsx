@@ -114,6 +114,13 @@ export function BuildScreen() {
         motorcycleId={featuredBuild.id}
         showBackButton={false}
         backFallbackHref="/(tabs)/garage"
+        onMotorcycleRemoved={(removedMotorcycleId) => {
+          setMotorcycles((current) =>
+            current.filter(
+              (motorcycle) => motorcycle.id !== removedMotorcycleId,
+            ),
+          );
+        }}
       />
     );
   }

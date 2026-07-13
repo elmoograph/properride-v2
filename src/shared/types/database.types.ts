@@ -41,6 +41,7 @@ export type MotorcycleRow = {
   visibility: Visibility;
   created_at: string;
   updated_at: string;
+  archived_at: string | null;
 };
 
 export type MotorcyclePartRow = {
@@ -157,6 +158,7 @@ export type Database = {
           visibility?: Visibility;
           created_at?: string;
           updated_at?: string;
+          archived_at?: string | null;
         };
         Update: Partial<Omit<MotorcycleRow, "id" | "user_id" | "created_at">>;
         Relationships: [];
