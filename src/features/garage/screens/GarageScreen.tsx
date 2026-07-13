@@ -354,6 +354,7 @@ export function GarageScreen() {
             items={recentGalleryItems.map((item) => ({
               id: item.id,
               imageUrl: item.image_url,
+              mediaType: item.media_type,
             }))}
           />
         )}

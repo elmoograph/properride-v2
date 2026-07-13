@@ -632,6 +632,7 @@ function GalleryTab({
           items={gallery.map((item) => ({
             id: item.id,
             imageUrl: item.image_url,
+            mediaType: item.media_type,
           }))}
         />
       )}
