@@ -8,6 +8,7 @@ import {
   Heart,
   MoreHorizontal,
   Pencil,
+  Play,
   Share2,
   X,
 } from "lucide-react-native";
@@ -24,7 +25,6 @@ import {
 
 import {
   archiveGalleryItemById,
-  archiveGalleryItemsByRelatedPostId,
   getGalleryItemById,
 } from "@/src/features/garage/repositories/motorcycleGallery.repository";
 import {
@@ -376,15 +376,40 @@ export function GalleryDetailScreen() {
   }
 
   const hasRelatedPost = Boolean(galleryItem.related_post_id);
+  const isVideo = galleryItem.media_type === "video";
 
   return (
     <AppScreen padded={false}>
       <View style={styles.container}>
-        <Image
-          source={{ uri: galleryItem.image_url }}
-          style={styles.image}
-          resizeMode="cover"
-        />
+        {isVideo ? (
+          <View style={styles.videoDetailFallback}>
+            <View style={styles.videoPlayButton}>
+              <Play
+                size={34}
+                color={theme.background}
+                fill={theme.background}
+              />
+            </View>
+
+            <AppText variant="bodyMedium" style={styles.videoFallbackTitle}>
+              Video preview
+            </AppText>
+
+            <AppText
+              variant="caption"
+              tone="secondary"
+              style={styles.videoFallbackText}
+            >
+              Player video akan kita sambungkan di tahap berikutnya.
+            </AppText>
+          </View>
+        ) : (
+          <Image
+            source={{ uri: galleryItem.image_url }}
+            style={styles.image}
+            resizeMode="cover"
+          />
+        )}
 
         <View style={styles.topActions}>
           <Pressable style={styles.iconButton} onPress={() => router.back()}>
@@ -733,5 +758,34 @@ const styles = StyleSheet.create({
       height: 1,
     },
     textShadowRadius: 6,
+  },
+  videoDetailFallback: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: "#000000",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.xl,
+  },
+  videoPlayButton: {
+    width: 72,
+    height: 72,
+    borderRadius: radius.pill,
+    backgroundColor: theme.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.lg,
+  },
+  videoFallbackTitle: {
+    color: theme.textPrimary,
+    textAlign: "center",
+  },
+  videoFallbackText: {
+    marginTop: spacing.xs,
+    textAlign: "center",
+    maxWidth: 260,
   },
 });
