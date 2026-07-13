@@ -67,8 +67,19 @@ const detailTabs: Array<{
   },
 ];
 
-export function MotorcycleDetailScreen() {
+type MotorcycleDetailScreenProps = {
+  motorcycleId?: string;
+  showBackButton?: boolean;
+  backFallbackHref?: string;
+};
+
+export function MotorcycleDetailScreen({
+  motorcycleId,
+  showBackButton = true,
+  backFallbackHref = "/(tabs)/garage",
+}: MotorcycleDetailScreenProps = {}) {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const resolvedMotorcycleId = motorcycleId ?? id;
   const [activeTab, setActiveTab] = useState<DetailTab>("setup");
 
   const [motorcycle, setMotorcycle] = useState<MotorcycleRow | null>(null);
@@ -89,7 +100,7 @@ export function MotorcycleDetailScreen() {
       let isActive = true;
 
       async function loadMotorcycle() {
-        if (!id) {
+        if (!resolvedMotorcycleId) {
           setLoading(false);
           setErrorMessage("Motor tidak ditemukan.");
           return;
@@ -101,10 +112,10 @@ export function MotorcycleDetailScreen() {
 
           const [motorcycleData, partsData, timelineData, galleryData] =
             await Promise.all([
-              getMotorcycleById(id),
-              listPartsByMotorcycleId(id),
-              listTimelineItemsByMotorcycleId(id),
-              listGalleryItemsByMotorcycleId(id),
+              getMotorcycleById(resolvedMotorcycleId),
+              listPartsByMotorcycleId(resolvedMotorcycleId),
+              listTimelineItemsByMotorcycleId(resolvedMotorcycleId),
+              listGalleryItemsByMotorcycleId(resolvedMotorcycleId),
             ]);
 
           if (isActive) {
@@ -134,7 +145,7 @@ export function MotorcycleDetailScreen() {
       return () => {
         isActive = false;
       };
-    }, [id]),
+    }, [resolvedMotorcycleId]),
   );
 
   if (loading) {
@@ -158,7 +169,7 @@ export function MotorcycleDetailScreen() {
           <AppText tone="secondary" style={styles.centerText}>
             {errorMessage ?? "Data motor belum tersedia atau sudah dihapus."}
           </AppText>
-          <AppButton onPress={() => router.replace("/(tabs)/garage")}>
+          <AppButton onPress={() => router.replace(backFallbackHref)}>
             Kembali ke Build
           </AppButton>
         </View>
@@ -246,9 +257,13 @@ export function MotorcycleDetailScreen() {
         <View style={styles.heroOverlay} />
 
         <View style={styles.topActions}>
-          <Pressable style={styles.iconButton} onPress={() => router.back()}>
-            <ChevronLeft size={22} color={theme.textPrimary} />
-          </Pressable>
+          {showBackButton ? (
+            <Pressable style={styles.iconButton} onPress={() => router.back()}>
+              <ChevronLeft size={22} color={theme.textPrimary} />
+            </Pressable>
+          ) : (
+            <View />
+          )}
 
           <Pressable
             style={styles.iconButton}
