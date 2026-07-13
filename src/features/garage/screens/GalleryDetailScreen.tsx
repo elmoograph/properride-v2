@@ -8,8 +8,8 @@ import {
   Heart,
   MoreHorizontal,
   Pencil,
-  Play,
   Share2,
+  Play,
   X,
 } from "lucide-react-native";
 import { useCallback, useState } from "react";
@@ -400,7 +400,7 @@ export function GalleryDetailScreen() {
               tone="secondary"
               style={styles.videoFallbackText}
             >
-              Player video akan kita sambungkan di tahap berikutnya.
+              Player video akan kita sambungkan setelah development build siap.
             </AppText>
           </View>
         ) : (
