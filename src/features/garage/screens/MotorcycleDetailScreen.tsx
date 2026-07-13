@@ -159,7 +159,7 @@ export function MotorcycleDetailScreen() {
             {errorMessage ?? "Data motor belum tersedia atau sudah dihapus."}
           </AppText>
           <AppButton onPress={() => router.replace("/(tabs)/garage")}>
-            Kembali ke Garage
+            Kembali ke Build
           </AppButton>
         </View>
       </AppScreen>

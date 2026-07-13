@@ -1,3 +1,3 @@
-import { GarageScreen } from "@/src/features/garage/screens/GarageScreen";
+import { BuildScreen } from "@/src/features/build/screens/BuildScreen";
 
-export default GarageScreen;
+export default BuildScreen;

@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Compass, Home, Plus, User, Warehouse } from "lucide-react-native";
+import { Bike, Compass, Home, Plus, User } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable } from "react-native";
 
@@ -86,10 +86,10 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="garage"
           options={{
-            title: "Garage",
+            title: "Build",
             tabBarIcon: ({ color }) => (
               <TabBarIcon>
-                <Warehouse color={color} size={24} />
+                <Bike color={color} size={24} />
               </TabBarIcon>
             ),
           }}
