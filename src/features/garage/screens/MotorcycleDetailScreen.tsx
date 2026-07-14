@@ -10,7 +10,6 @@ import {
   Package,
   Rows3,
   Trash2,
-  UserRound,
 } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -30,7 +29,7 @@ import {
   AppText,
 } from "@/src/shared/components";
 import { GarageGalleryGrid } from "@/src/features/garage/components/GarageGalleryGrid";
-import { radius, spacing, theme } from "@/src/shared/theme";
+import { colors, radius, spacing, theme } from "@/src/shared/theme";
 import {
   archiveMotorcycleById,
   getMotorcycleById,
@@ -357,104 +356,73 @@ export function MotorcycleDetailScreen({
       </View>
 
       <View style={styles.content}>
-        <AppCard style={styles.buildInfoCard}>
-          <View style={styles.buildTopRow}>
-            <View style={styles.buildBadge}>
-              <AppText variant="tiny" tone="accent">
-                Build
-              </AppText>
-            </View>
-          </View>
-
-          <AppText variant="titleLarge" style={styles.title}>
-            {motorcycleTitle}
-          </AppText>
-
-          <AppText
-            variant="caption"
-            tone="secondary"
-            style={styles.motorcycleMeta}
-          >
-            {motorcycle.brand} {motorcycle.model} · {motorcycle.year}
-          </AppText>
-
-          <View style={styles.builderInfo}>
-            <View style={styles.builderMetaItem}>
-              <UserRound size={15} color={theme.textMuted} />
-              <AppText variant="caption" tone="secondary" numberOfLines={1}>
-                {builderName}
-              </AppText>
-            </View>
-
-            <View style={styles.builderMetaItem}>
-              <MapPin size={15} color={theme.textMuted} />
-              <AppText variant="caption" tone="secondary" numberOfLines={1}>
-                {builderLocation}
-              </AppText>
-            </View>
-          </View>
-        </AppCard>
-
-        <View style={styles.statsRow}>
-          <AppCard style={styles.statCard}>
-            <Rows3 size={20} color={theme.primary} />
-            <AppText
-              variant="caption"
-              tone="secondary"
-              style={styles.statLabel}
-            >
-              Gallery
-            </AppText>
-            <AppText variant="bodyMedium">{galleryItems.length} item</AppText>
-          </AppCard>
-
-          <AppCard style={styles.statCard}>
-            <Package size={20} color={theme.primary} />
-            <AppText
-              variant="caption"
-              tone="secondary"
-              style={styles.statLabel}
-            >
-              Parts
-            </AppText>
-            <AppText variant="bodyMedium">{parts.length} item</AppText>
-          </AppCard>
-
-          <AppCard style={styles.statCard}>
-            <Gauge size={20} color={theme.primary} />
-            <AppText
-              variant="caption"
-              tone="secondary"
-              style={styles.statLabel}
-            >
-              Mesin
-            </AppText>
-            <AppText variant="bodyMedium">{motorcycleEngineInfo}</AppText>
-          </AppCard>
-        </View>
-
-        <View style={styles.managementRow}>
+        <View style={styles.buildInfoSection}>
           <Pressable
-            disabled={removingMotorcycle}
-            onPress={handleArchiveMotorcycle}
+            onPress={() => router.push("/(tabs)/profile")}
             style={({ pressed }) => [
-              styles.removeMotorcycleButton,
+              styles.builderNameButton,
               pressed && styles.pressed,
-              removingMotorcycle && styles.disabledButton,
             ]}
           >
-            {removingMotorcycle ? (
-              <ActivityIndicator size="small" color={theme.danger} />
-            ) : (
-              <Trash2 size={16} color={theme.danger} />
-            )}
-
-            <AppText variant="caption" style={styles.removeMotorcycleText}>
-              {removingMotorcycle ? "Memproses..." : "Hapus Motor"}
+            <AppText variant="bodyMedium" tone="accent" numberOfLines={1}>
+              {builderName}
             </AppText>
           </Pressable>
-        </View>
 
+          <View style={styles.motorcycleTitleBlock}>
+            <View style={styles.motorcycleMetaRow}>
+              <AppText
+                variant="titleLarge"
+                style={styles.title}
+                numberOfLines={1}
+              >
+                {motorcycleTitle}
+              </AppText>
+              <View style={styles.yearPill}>
+                <AppText variant="tiny" tone="accent">
+                  {motorcycle.year}
+                </AppText>
+              </View>
+            </View>
+            <View style={styles.motorcycleMetaRow}>
+              <View style={styles.locationMeta}>
+                <MapPin size={14} color={theme.primary} />
+                <AppText variant="caption" tone="secondary" numberOfLines={1}>
+                  {builderLocation}
+                </AppText>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.quickStatsRow}>
+            <View style={styles.quickStatItem}>
+              <AppText variant="caption" tone="secondary">
+                Parts
+              </AppText>
+              <AppText variant="bodyMedium">{parts.length}</AppText>
+            </View>
+
+            <View style={styles.quickStatDivider} />
+
+            <View style={styles.quickStatItem}>
+              <AppText variant="caption" tone="secondary">
+                Mesin
+              </AppText>
+              <AppText variant="bodyMedium" numberOfLines={1}>
+                {motorcycleEngineInfo}
+              </AppText>
+            </View>
+
+            <View style={styles.quickStatDivider} />
+
+            <View style={styles.quickStatItem}>
+              <AppText variant="caption" tone="secondary">
+                Gallery
+              </AppText>
+              <AppText variant="bodyMedium">{galleryItems.length}</AppText>
+            </View>
+          </View>
+        </View>
         <View style={styles.tabBar}>
           {detailTabs.map((tab) => {
             const isActive = activeTab === tab.value;
@@ -494,6 +462,39 @@ export function MotorcycleDetailScreen({
             <GalleryTab gallery={galleryItems} motorcycleId={motorcycle.id} />
           ) : null}
         </View>
+        <AppCard style={styles.dangerZoneCard}>
+          <View style={styles.dangerZoneText}>
+            <AppText variant="bodyMedium">Kelola Build</AppText>
+            <AppText
+              variant="caption"
+              tone="secondary"
+              style={styles.dangerZoneDescription}
+            >
+              Arsipkan motor jika sudah tidak digunakan lagi. Data tidak dihapus
+              permanen.
+            </AppText>
+          </View>
+
+          <Pressable
+            disabled={removingMotorcycle}
+            onPress={handleArchiveMotorcycle}
+            style={({ pressed }) => [
+              styles.removeMotorcycleButton,
+              pressed && styles.pressed,
+              removingMotorcycle && styles.disabledButton,
+            ]}
+          >
+            {removingMotorcycle ? (
+              <ActivityIndicator size="small" color={theme.danger} />
+            ) : (
+              <Trash2 size={16} color={theme.danger} />
+            )}
+
+            <AppText variant="caption" style={styles.removeMotorcycleText}>
+              {removingMotorcycle ? "Memproses..." : "Hapus"}
+            </AppText>
+          </Pressable>
+        </AppCard>
       </View>
     </AppScreen>
   );
@@ -539,7 +540,7 @@ function SetupPartsTab({
   return (
     <View>
       <View style={styles.sectionHeader}>
-        <View>
+        <View style={styles.sectionHeaderText}>
           <AppText variant="title">Setup Parts</AppText>
           <AppText
             variant="caption"
@@ -549,6 +550,20 @@ function SetupPartsTab({
             Part dikelompokkan berdasarkan kategori setup.
           </AppText>
         </View>
+
+        <Pressable
+          onPress={() =>
+            router.push(`/(create)/add-part?motorcycleId=${motorcycleId}`)
+          }
+          style={({ pressed }) => [
+            styles.sectionActionButton,
+            pressed && styles.pressed,
+          ]}
+        >
+          <AppText variant="caption" tone="accent">
+            Add Part
+          </AppText>
+        </Pressable>
       </View>
 
       {groupedParts.length === 0 ? (
@@ -659,15 +674,6 @@ function SetupPartsTab({
           })}
         </View>
       ) : null}
-
-      <AppButton
-        style={styles.bottomButton}
-        onPress={() =>
-          router.push(`/(create)/add-part?motorcycleId=${motorcycleId}`)
-        }
-      >
-        Add Part
-      </AppButton>
     </View>
   );
 }
@@ -755,7 +761,7 @@ function GalleryTab({
   return (
     <View>
       <View style={styles.sectionHeader}>
-        <View>
+        <View style={styles.sectionHeaderText}>
           <AppText variant="title">Gallery</AppText>
           <AppText
             variant="caption"
@@ -765,6 +771,20 @@ function GalleryTab({
             Foto terbaru dari motor ini.
           </AppText>
         </View>
+
+        <Pressable
+          onPress={() =>
+            router.push(`/(create)/add-gallery?motorcycleId=${motorcycleId}`)
+          }
+          style={({ pressed }) => [
+            styles.sectionActionButton,
+            pressed && styles.pressed,
+          ]}
+        >
+          <AppText variant="caption" tone="accent">
+            Add Gallery
+          </AppText>
+        </Pressable>
       </View>
 
       {gallery.length === 0 ? (
@@ -783,15 +803,6 @@ function GalleryTab({
           }))}
         />
       )}
-
-      <AppButton
-        style={styles.bottomButton}
-        onPress={() =>
-          router.push(`/(create)/add-gallery?motorcycleId=${motorcycleId}`)
-        }
-      >
-        Add Gallery
-      </AppButton>
     </View>
   );
 }
@@ -866,19 +877,6 @@ const styles = StyleSheet.create({
   },
   title: {
     marginTop: spacing.xs,
-  },
-  statsRow: {
-    marginTop: spacing.xl,
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  statCard: {
-    flex: 1,
-    minHeight: 100,
-    alignItems: "flex-start",
-  },
-  statLabel: {
-    marginTop: spacing.md,
   },
   tabBar: {
     marginTop: spacing.section,
@@ -1060,49 +1058,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: spacing.lg,
   },
-  buildInfoCard: {
-    gap: spacing.sm,
-  },
-  buildTopRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.md,
-  },
-  buildBadge: {
-    minHeight: 24,
-    borderRadius: radius.pill,
-    backgroundColor: theme.primarySoft,
-    borderWidth: 1,
-    borderColor: theme.borderSoft,
-    paddingHorizontal: spacing.sm,
-    alignItems: "center",
-    justifyContent: "center",
-    alignSelf: "flex-start",
-  },
   motorcycleMeta: {
     marginTop: -spacing.xs,
   },
-  builderInfo: {
-    marginTop: spacing.xs,
-    gap: spacing.xs,
-  },
-  builderMetaItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-  },
-  managementRow: {
-    marginTop: spacing.md,
-    alignItems: "flex-start",
-  },
   removeMotorcycleButton: {
-    minHeight: 40,
+    minHeight: 36,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: "rgba(255, 91, 91, 0.35)",
     backgroundColor: "rgba(255, 91, 91, 0.08)",
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1110,5 +1075,86 @@ const styles = StyleSheet.create({
   },
   removeMotorcycleText: {
     color: theme.danger,
+  },
+  dangerZoneCard: {
+    marginTop: spacing.section,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+  },
+  dangerZoneText: {
+    flex: 1,
+  },
+  dangerZoneDescription: {
+    marginTop: spacing.xs,
+    lineHeight: 18,
+  },
+  buildInfoSection: {
+    gap: 0,
+  },
+  builderNameButton: {
+    alignSelf: "flex-start",
+  },
+  motorcycleTitleBlock: {
+    marginTop: spacing.sm,
+    gap: spacing.xs,
+  },
+  motorcycleMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    flexWrap: "wrap",
+  },
+  locationMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    flexShrink: 1,
+  },
+  yearPill: {
+    minHeight: 26,
+    borderRadius: radius.pill,
+    backgroundColor: theme.primarySoft,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    paddingHorizontal: spacing.sm,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quickStatsRow: {
+    marginTop: spacing.lg,
+    minHeight: 64,
+    borderRadius: radius.lg,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.md,
+  },
+  quickStatItem: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+  },
+  quickStatDivider: {
+    width: 1,
+    height: 34,
+    backgroundColor: theme.borderSoft,
+  },
+  sectionHeaderText: {
+    flex: 1,
+  },
+  sectionActionButton: {
+    minHeight: 34,
+    borderRadius: radius.pill,
+    backgroundColor: theme.primarySoft,
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    paddingHorizontal: spacing.md,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
