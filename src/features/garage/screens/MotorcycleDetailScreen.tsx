@@ -5,11 +5,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Edit3,
-  Gauge,
   MapPin,
   Package,
-  Rows3,
-  Trash2,
 } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -28,7 +25,7 @@ import {
   AppText,
 } from "@/src/shared/components";
 import { GarageGalleryGrid } from "@/src/features/garage/components/GarageGalleryGrid";
-import { colors, radius, spacing, theme } from "@/src/shared/theme";
+import { radius, spacing, theme } from "@/src/shared/theme";
 import { getMotorcycleById } from "@/src/features/garage/repositories/motorcycle.repository";
 import { getProfileById } from "@/src/features/profile/repositories/profile.repository";
 import type {
@@ -383,7 +380,6 @@ export function MotorcycleDetailScreen({
         <View style={styles.tabContent}>
           {activeTab === "setup" ? (
             <SetupPartsTab
-              motorcycleId={motorcycle.id}
               parts={parts}
               archivingPartId={archivingPartId}
               onArchivePart={handleArchivePart}
@@ -395,7 +391,7 @@ export function MotorcycleDetailScreen({
           ) : null}
 
           {activeTab === "gallery" ? (
-            <GalleryTab gallery={galleryItems} motorcycleId={motorcycle.id} />
+            <GalleryTab gallery={galleryItems} />
           ) : null}
         </View>
       </View>
@@ -404,12 +400,10 @@ export function MotorcycleDetailScreen({
 }
 
 function SetupPartsTab({
-  motorcycleId,
   parts,
   archivingPartId,
   onArchivePart,
 }: {
-  motorcycleId: string;
   parts: MotorcyclePartRow[];
   archivingPartId: string | null;
   onArchivePart: (part: MotorcyclePartRow) => void;
@@ -453,20 +447,6 @@ function SetupPartsTab({
             Part dikelompokkan berdasarkan kategori setup.
           </AppText>
         </View>
-
-        <Pressable
-          onPress={() =>
-            router.push(`/(create)/add-part?motorcycleId=${motorcycleId}`)
-          }
-          style={({ pressed }) => [
-            styles.sectionActionButton,
-            pressed && styles.pressed,
-          ]}
-        >
-          <AppText variant="caption" tone="accent">
-            Add Part
-          </AppText>
-        </Pressable>
       </View>
 
       {groupedParts.length === 0 ? (
@@ -654,13 +634,7 @@ function TimelineTab({
   );
 }
 
-function GalleryTab({
-  gallery,
-  motorcycleId,
-}: {
-  gallery: MotorcycleGalleryItemRow[];
-  motorcycleId: string;
-}) {
+function GalleryTab({ gallery }: { gallery: MotorcycleGalleryItemRow[] }) {
   return (
     <View>
       <View style={styles.sectionHeader}>
@@ -674,20 +648,6 @@ function GalleryTab({
             Foto terbaru dari motor ini.
           </AppText>
         </View>
-
-        <Pressable
-          onPress={() =>
-            router.push(`/(create)/add-gallery?motorcycleId=${motorcycleId}`)
-          }
-          style={({ pressed }) => [
-            styles.sectionActionButton,
-            pressed && styles.pressed,
-          ]}
-        >
-          <AppText variant="caption" tone="accent">
-            Add Gallery
-          </AppText>
-        </Pressable>
       </View>
 
       {gallery.length === 0 ? (
@@ -1019,15 +979,5 @@ const styles = StyleSheet.create({
   },
   sectionHeaderText: {
     flex: 1,
-  },
-  sectionActionButton: {
-    minHeight: 34,
-    borderRadius: radius.pill,
-    backgroundColor: theme.primarySoft,
-    borderWidth: 1,
-    borderColor: theme.borderSoft,
-    paddingHorizontal: spacing.md,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });
