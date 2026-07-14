@@ -15,7 +15,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Dimensions,
   Image,
   Pressable,
   StyleSheet,
@@ -30,10 +29,7 @@ import {
 } from "@/src/shared/components";
 import { GarageGalleryGrid } from "@/src/features/garage/components/GarageGalleryGrid";
 import { colors, radius, spacing, theme } from "@/src/shared/theme";
-import {
-  archiveMotorcycleById,
-  getMotorcycleById,
-} from "@/src/features/garage/repositories/motorcycle.repository";
+import { getMotorcycleById } from "@/src/features/garage/repositories/motorcycle.repository";
 import { getProfileById } from "@/src/features/profile/repositories/profile.repository";
 import type {
   MotorcycleGalleryItemRow,
@@ -75,21 +71,16 @@ const detailTabs: Array<{
   },
 ];
 
-const screenHeight = Dimensions.get("window").height;
-const buildHeroHeight = Math.round(screenHeight * 0.6);
-
 type MotorcycleDetailScreenProps = {
   motorcycleId?: string;
   showBackButton?: boolean;
   backFallbackHref?: string;
-  onMotorcycleRemoved?: (motorcycleId: string) => void;
 };
 
 export function MotorcycleDetailScreen({
   motorcycleId,
   showBackButton = true,
   backFallbackHref = "/(tabs)/garage",
-  onMotorcycleRemoved,
 }: MotorcycleDetailScreenProps = {}) {
   const { id } = useLocalSearchParams<{ id: string }>();
   const resolvedMotorcycleId = motorcycleId ?? id;
@@ -108,7 +99,6 @@ export function MotorcycleDetailScreen({
     [],
   );
   const [archivingPartId, setArchivingPartId] = useState<string | null>(null);
-  const [removingMotorcycle, setRemovingMotorcycle] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -265,60 +255,6 @@ export function MotorcycleDetailScreen({
     );
   }
 
-  function handleArchiveMotorcycle() {
-    if (!motorcycle) {
-      return;
-    }
-
-    Alert.alert(
-      "Hapus motor dari Build?",
-      "Motor akan diarsipkan dari Build aktif. Data part, gallery, timeline, dan post terkait tidak dihapus permanen.",
-      [
-        {
-          text: "Batal",
-          style: "cancel",
-        },
-        {
-          text: "Hapus Motor",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setRemovingMotorcycle(true);
-
-              await archiveMotorcycleById(motorcycle.id);
-
-              onMotorcycleRemoved?.(motorcycle.id);
-
-              Alert.alert(
-                "Motor dihapus dari Build",
-                "Motor berhasil diarsipkan dari Build aktif.",
-                [
-                  {
-                    text: "OK",
-                    onPress: () => {
-                      if (showBackButton) {
-                        router.replace(backFallbackHref);
-                      }
-                    },
-                  },
-                ],
-              );
-            } catch (error) {
-              const message =
-                error instanceof Error
-                  ? error.message
-                  : "Terjadi kesalahan saat menghapus motor dari Build.";
-
-              Alert.alert("Gagal menghapus motor", message);
-            } finally {
-              setRemovingMotorcycle(false);
-            }
-          },
-        },
-      ],
-    );
-  }
-
   return (
     <AppScreen scrollable padded={false}>
       <View style={styles.heroWrap}>
@@ -462,39 +398,6 @@ export function MotorcycleDetailScreen({
             <GalleryTab gallery={galleryItems} motorcycleId={motorcycle.id} />
           ) : null}
         </View>
-        <AppCard style={styles.dangerZoneCard}>
-          <View style={styles.dangerZoneText}>
-            <AppText variant="bodyMedium">Kelola Build</AppText>
-            <AppText
-              variant="caption"
-              tone="secondary"
-              style={styles.dangerZoneDescription}
-            >
-              Arsipkan motor jika sudah tidak digunakan lagi. Data tidak dihapus
-              permanen.
-            </AppText>
-          </View>
-
-          <Pressable
-            disabled={removingMotorcycle}
-            onPress={handleArchiveMotorcycle}
-            style={({ pressed }) => [
-              styles.removeMotorcycleButton,
-              pressed && styles.pressed,
-              removingMotorcycle && styles.disabledButton,
-            ]}
-          >
-            {removingMotorcycle ? (
-              <ActivityIndicator size="small" color={theme.danger} />
-            ) : (
-              <Trash2 size={16} color={theme.danger} />
-            )}
-
-            <AppText variant="caption" style={styles.removeMotorcycleText}>
-              {removingMotorcycle ? "Memproses..." : "Hapus"}
-            </AppText>
-          </Pressable>
-        </AppCard>
       </View>
     </AppScreen>
   );
@@ -828,8 +731,7 @@ function groupPartsByCategory(parts: MotorcyclePartRow[]): PartCategoryGroup[] {
 
 const styles = StyleSheet.create({
   heroWrap: {
-    height: buildHeroHeight,
-    minHeight: 420,
+    height: 280,
     backgroundColor: theme.surfaceSoft,
   },
   heroImage: {
@@ -1060,35 +962,6 @@ const styles = StyleSheet.create({
   },
   motorcycleMeta: {
     marginTop: -spacing.xs,
-  },
-  removeMotorcycleButton: {
-    minHeight: 36,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: "rgba(255, 91, 91, 0.35)",
-    backgroundColor: "rgba(255, 91, 91, 0.08)",
-    paddingHorizontal: spacing.sm,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.xs,
-  },
-  removeMotorcycleText: {
-    color: theme.danger,
-  },
-  dangerZoneCard: {
-    marginTop: spacing.section,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.md,
-  },
-  dangerZoneText: {
-    flex: 1,
-  },
-  dangerZoneDescription: {
-    marginTop: spacing.xs,
-    lineHeight: 18,
   },
   buildInfoSection: {
     gap: 0,
