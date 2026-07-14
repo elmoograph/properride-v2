@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
-import { MotorcycleDetailScreen } from "@/src/features/garage/screens/MotorcycleDetailScreen";
+import { BuildDetailScreen } from "@/src/features/build/screens/BuildDetailScreen";
 import { listMotorcyclesByUserId } from "@/src/features/garage/repositories/motorcycle.repository";
 import { AppButton, AppScreen, AppText } from "@/src/shared/components";
 import { radius, spacing, theme } from "@/src/shared/theme";
@@ -110,7 +110,7 @@ export function BuildScreen() {
 
   if (featuredBuild) {
     return (
-      <MotorcycleDetailScreen
+      <BuildDetailScreen
         motorcycleId={featuredBuild.id}
         showBackButton={false}
         backFallbackHref="/(tabs)/garage"
