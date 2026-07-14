@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   Image,
   Pressable,
   StyleSheet,
@@ -74,6 +75,9 @@ const detailTabs: Array<{
     value: "gallery",
   },
 ];
+
+const screenHeight = Dimensions.get("window").height;
+const buildHeroHeight = Math.round(screenHeight * 0.6);
 
 type MotorcycleDetailScreenProps = {
   motorcycleId?: string;
@@ -813,7 +817,8 @@ function groupPartsByCategory(parts: MotorcyclePartRow[]): PartCategoryGroup[] {
 
 const styles = StyleSheet.create({
   heroWrap: {
-    height: 280,
+    height: buildHeroHeight,
+    minHeight: 420,
     backgroundColor: theme.surfaceSoft,
   },
   heroImage: {
@@ -826,7 +831,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     left: 0,
-    backgroundColor: "rgba(11, 15, 20, 0.22)",
+    backgroundColor: "rgba(11, 15, 20, 0.16)",
   },
   topActions: {
     position: "absolute",
@@ -848,7 +853,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   content: {
-    marginTop: -28,
+    marginTop: -40,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     backgroundColor: theme.background,
