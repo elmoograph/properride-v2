@@ -1,11 +1,10 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Trash2 } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Dimensions,
-  Image,
   Pressable,
   StyleSheet,
   View,
@@ -17,12 +16,12 @@ import {
   AppScreen,
   AppText,
 } from "@/src/shared/components";
+import { BuildGalleryTab } from "@/src/features/build/components/BuildGalleryTab";
 import { BuildHero } from "@/src/features/build/components/BuildHero";
 import { BuildInfoSection } from "@/src/features/build/components/BuildInfoSection";
 import { BuildSetupPartsTab } from "@/src/features/build/components/BuildSetupPartsTab";
-import { BuildGalleryTab } from "@/src/features/build/components/BuildGalleryTab";
 import { BuildTimelineTab } from "@/src/features/build/components/BuildTimelineTab";
-import { colors, radius, spacing, theme } from "@/src/shared/theme";
+import { radius, spacing, theme } from "@/src/shared/theme";
 import {
   archiveMotorcycleById,
   getMotorcycleById,
@@ -66,7 +65,7 @@ const detailTabs: Array<{
 const screenHeight = Dimensions.get("window").height;
 const buildHeroHeight = Math.round(screenHeight * 0.6);
 
-type MotorcycleDetailScreenProps = {
+type BuildDetailScreenProps = {
   motorcycleId?: string;
   showBackButton?: boolean;
   backFallbackHref?: string;
@@ -78,7 +77,7 @@ export function BuildDetailScreen({
   showBackButton = true,
   backFallbackHref = "/(tabs)/garage",
   onMotorcycleRemoved,
-}: MotorcycleDetailScreenProps = {}) {
+}: BuildDetailScreenProps = {}) {
   const { id } = useLocalSearchParams<{ id: string }>();
   const resolvedMotorcycleId = motorcycleId ?? id;
   const [activeTab, setActiveTab] = useState<DetailTab>("setup");
@@ -424,12 +423,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingBottom: spacing.section,
   },
-  identity: {
-    gap: spacing.xs,
-  },
-  title: {
-    marginTop: spacing.xs,
-  },
   tabBar: {
     marginTop: spacing.section,
     minHeight: 44,
@@ -454,18 +447,8 @@ const styles = StyleSheet.create({
   tabContent: {
     marginTop: spacing.xl,
   },
-  sectionHeader: {
-    marginBottom: spacing.md,
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: spacing.md,
-  },
   disabledButton: {
     opacity: 0.5,
-  },
-  bottomButton: {
-    marginTop: spacing.section,
   },
   pressed: {
     opacity: 0.82,
@@ -508,21 +491,5 @@ const styles = StyleSheet.create({
   dangerZoneDescription: {
     marginTop: spacing.xs,
     lineHeight: 18,
-  },
-  locationMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    flexShrink: 1,
-  },
-  sectionActionButton: {
-    minHeight: 34,
-    borderRadius: radius.pill,
-    backgroundColor: theme.primarySoft,
-    borderWidth: 1,
-    borderColor: theme.borderSoft,
-    paddingHorizontal: spacing.md,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });
