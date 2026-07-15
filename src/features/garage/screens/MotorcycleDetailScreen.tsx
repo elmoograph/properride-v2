@@ -3,7 +3,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Edit3,
   MapPin,
   Package,
 } from "lucide-react-native";
@@ -175,7 +174,7 @@ export function MotorcycleDetailScreen({
             {errorMessage ?? "Data motor belum tersedia atau sudah dihapus."}
           </AppText>
           <AppButton onPress={() => router.replace(backFallbackHref)}>
-            Kembali ke Build
+            Kembali
           </AppButton>
         </View>
       </AppScreen>
@@ -223,28 +222,17 @@ export function MotorcycleDetailScreen({
             <View />
           )}
 
-          <Pressable
-            style={styles.iconButton}
-            onPress={() => router.push(`/motorcycle/edit/${motorcycle.id}`)}
-          >
-            <Edit3 size={18} color={theme.textPrimary} />
-          </Pressable>
+          <View style={styles.topActionPlaceholder} />
         </View>
       </View>
 
       <View style={styles.content}>
-        <View style={styles.buildInfoSection}>
-          <Pressable
-            onPress={() => router.push("/(tabs)/profile")}
-            style={({ pressed }) => [
-              styles.builderNameButton,
-              pressed && styles.pressed,
-            ]}
-          >
+        <View style={styles.detailInfoSection}>
+          <View style={styles.builderNameText}>
             <AppText variant="bodyMedium" tone="accent" numberOfLines={1}>
               {builderName}
             </AppText>
-          </Pressable>
+          </View>
 
           <View style={styles.motorcycleTitleBlock}>
             <View style={styles.motorcycleMetaRow}>
@@ -422,14 +410,7 @@ function SetupPartsTab({ parts }: { parts: MotorcyclePartRow[] }) {
                 {isExpanded ? (
                   <View style={styles.partList}>
                     {group.parts.map((part) => (
-                      <Pressable
-                        key={part.id}
-                        onPress={() => router.push(`/part/edit/${part.id}`)}
-                        style={({ pressed }) => [
-                          styles.partRow,
-                          pressed && styles.pressed,
-                        ]}
-                      >
+                      <View key={part.id} style={styles.partRow}>
                         <View style={styles.partThumbnail}>
                           <Package size={18} color={theme.primary} />
                         </View>
@@ -458,7 +439,7 @@ function SetupPartsTab({ parts }: { parts: MotorcyclePartRow[] }) {
                             </AppText>
                           ) : null}
                         </View>
-                      </Pressable>
+                      </View>
                     ))}
                   </View>
                 ) : null}
@@ -823,10 +804,10 @@ const styles = StyleSheet.create({
   motorcycleMeta: {
     marginTop: -spacing.xs,
   },
-  buildInfoSection: {
+  detailInfoSection: {
     gap: 0,
   },
-  builderNameButton: {
+  builderNameText: {
     alignSelf: "flex-start",
   },
   motorcycleTitleBlock: {
@@ -879,5 +860,9 @@ const styles = StyleSheet.create({
   },
   sectionHeaderText: {
     flex: 1,
+  },
+  topActionPlaceholder: {
+    width: 40,
+    height: 40,
   },
 });
