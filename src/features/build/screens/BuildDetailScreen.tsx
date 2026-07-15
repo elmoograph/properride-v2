@@ -17,10 +17,10 @@ import {
   AppScreen,
   AppText,
 } from "@/src/shared/components";
-import { GarageGalleryGrid } from "@/src/features/garage/components/GarageGalleryGrid";
 import { BuildHero } from "@/src/features/build/components/BuildHero";
 import { BuildInfoSection } from "@/src/features/build/components/BuildInfoSection";
 import { BuildSetupPartsTab } from "@/src/features/build/components/BuildSetupPartsTab";
+import { BuildGalleryTab } from "@/src/features/build/components/BuildGalleryTab";
 import { colors, radius, spacing, theme } from "@/src/shared/theme";
 import {
   archiveMotorcycleById,
@@ -364,7 +364,10 @@ export function BuildDetailScreen({
           ) : null}
 
           {activeTab === "gallery" ? (
-            <GalleryTab gallery={galleryItems} motorcycleId={motorcycle.id} />
+            <BuildGalleryTab
+              gallery={galleryItems}
+              motorcycleId={motorcycle.id}
+            />
           ) : null}
         </View>
         <AppCard style={styles.dangerZoneCard}>
@@ -474,62 +477,6 @@ function TimelineTab({
           })}
         </View>
       ) : null}
-    </View>
-  );
-}
-
-function GalleryTab({
-  gallery,
-  motorcycleId,
-}: {
-  gallery: MotorcycleGalleryItemRow[];
-  motorcycleId: string;
-}) {
-  return (
-    <View>
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionHeaderText}>
-          <AppText variant="title">Gallery</AppText>
-          <AppText
-            variant="caption"
-            tone="secondary"
-            style={styles.sectionSubtitle}
-          >
-            Foto terbaru dari motor ini.
-          </AppText>
-        </View>
-
-        <Pressable
-          onPress={() =>
-            router.push(`/(create)/add-gallery?motorcycleId=${motorcycleId}`)
-          }
-          style={({ pressed }) => [
-            styles.sectionActionButton,
-            pressed && styles.pressed,
-          ]}
-        >
-          <AppText variant="caption" tone="accent">
-            Add Gallery
-          </AppText>
-        </Pressable>
-      </View>
-
-      {gallery.length === 0 ? (
-        <AppCard style={styles.emptyCard}>
-          <AppText variant="bodyMedium">Belum ada foto</AppText>
-          <AppText variant="caption" tone="secondary" style={styles.emptyText}>
-            Tambahkan foto untuk mulai membangun galeri motor ini.
-          </AppText>
-        </AppCard>
-      ) : (
-        <GarageGalleryGrid
-          items={gallery.map((item) => ({
-            id: item.id,
-            imageUrl: item.image_url,
-            mediaType: item.media_type,
-          }))}
-        />
-      )}
     </View>
   );
 }
