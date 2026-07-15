@@ -1,6 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import {
-  Archive,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -37,8 +36,6 @@ import type {
 } from "@/src/shared/types/database.types";
 import { listGalleryItemsByMotorcycleId } from "@/src/features/garage/repositories/motorcycleGallery.repository";
 import {
-  archiveMotorcyclePartById,
-  createPartArchivedTimelineItem,
   listPartsByMotorcycleId,
   listTimelineItemsByMotorcycleId,
 } from "@/src/features/garage/repositories/motorcyclePart.repository";
@@ -95,7 +92,6 @@ export function MotorcycleDetailScreen({
   const [galleryItems, setGalleryItems] = useState<MotorcycleGalleryItemRow[]>(
     [],
   );
-  const [archivingPartId, setArchivingPartId] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -199,58 +195,6 @@ export function MotorcycleDetailScreen({
     builderProfile?.username ?? builderProfile?.full_name ?? "ProperRide Rider";
 
   const builderLocation = builderProfile?.location ?? "Lokasi belum diisi";
-
-  async function handleArchivePart(part: MotorcyclePartRow) {
-    if (!motorcycle) {
-      return;
-    }
-
-    Alert.alert(
-      "Archive part?",
-      `Part ${part.name} akan diarsipkan dari setup aktif motor ini.`,
-      [
-        {
-          text: "Batal",
-          style: "cancel",
-        },
-        {
-          text: "Archive",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setArchivingPartId(part.id);
-
-              await archiveMotorcyclePartById(part.id);
-
-              await createPartArchivedTimelineItem({
-                motorcycleId: motorcycle.id,
-                userId: motorcycle.user_id,
-                title: part.name,
-                description: `${part.brand} diarsipkan dari setup aktif ${motorcycle.brand} ${motorcycle.model}.`,
-              });
-
-              const [nextParts, nextTimelineItems] = await Promise.all([
-                listPartsByMotorcycleId(motorcycle.id),
-                listTimelineItemsByMotorcycleId(motorcycle.id),
-              ]);
-
-              setParts(nextParts);
-              setTimelineItems(nextTimelineItems);
-            } catch (error) {
-              const message =
-                error instanceof Error
-                  ? error.message
-                  : "Terjadi kesalahan saat mengarsipkan part.";
-
-              Alert.alert("Gagal mengarsipkan part", message);
-            } finally {
-              setArchivingPartId(null);
-            }
-          },
-        },
-      ],
-    );
-  }
 
   return (
     <AppScreen scrollable padded={false}>
@@ -378,13 +322,7 @@ export function MotorcycleDetailScreen({
         </View>
 
         <View style={styles.tabContent}>
-          {activeTab === "setup" ? (
-            <SetupPartsTab
-              parts={parts}
-              archivingPartId={archivingPartId}
-              onArchivePart={handleArchivePart}
-            />
-          ) : null}
+          {activeTab === "setup" ? <SetupPartsTab parts={parts} /> : null}
 
           {activeTab === "timeline" ? (
             <TimelineTab timelineItems={timelineItems} />
@@ -399,15 +337,7 @@ export function MotorcycleDetailScreen({
   );
 }
 
-function SetupPartsTab({
-  parts,
-  archivingPartId,
-  onArchivePart,
-}: {
-  parts: MotorcyclePartRow[];
-  archivingPartId: string | null;
-  onArchivePart: (part: MotorcyclePartRow) => void;
-}) {
+function SetupPartsTab({ parts }: { parts: MotorcyclePartRow[] }) {
   const groupedParts = useMemo(() => groupPartsByCategory(parts), [parts]);
   const [expandedCategories, setExpandedCategories] = useState<
     Record<string, boolean>
@@ -528,26 +458,6 @@ function SetupPartsTab({
                             </AppText>
                           ) : null}
                         </View>
-
-                        <Pressable
-                          disabled={archivingPartId === part.id}
-                          onPress={() => onArchivePart(part)}
-                          style={({ pressed }) => [
-                            styles.archivePartButton,
-                            pressed && styles.pressed,
-                            archivingPartId === part.id &&
-                              styles.disabledButton,
-                          ]}
-                        >
-                          {archivingPartId === part.id ? (
-                            <ActivityIndicator
-                              size="small"
-                              color={theme.primary}
-                            />
-                          ) : (
-                            <Archive size={16} color={theme.primary} />
-                          )}
-                        </Pressable>
                       </Pressable>
                     ))}
                   </View>
@@ -835,16 +745,6 @@ const styles = StyleSheet.create({
   },
   partMeta: {
     marginTop: spacing.xs,
-  },
-  archivePartButton: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.pill,
-    backgroundColor: theme.primarySoft,
-    borderWidth: 1,
-    borderColor: theme.borderSoft,
-    alignItems: "center",
-    justifyContent: "center",
   },
   disabledButton: {
     opacity: 0.5,
