@@ -1,5 +1,4 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { Trash2 } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,17 +9,13 @@ import {
   View,
 } from "react-native";
 
-import {
-  AppButton,
-  AppCard,
-  AppScreen,
-  AppText,
-} from "@/src/shared/components";
+import { AppButton, AppScreen, AppText } from "@/src/shared/components";
 import { BuildGalleryTab } from "@/src/features/build/components/BuildGalleryTab";
 import { BuildHero } from "@/src/features/build/components/BuildHero";
 import { BuildInfoSection } from "@/src/features/build/components/BuildInfoSection";
 import { BuildSetupPartsTab } from "@/src/features/build/components/BuildSetupPartsTab";
 import { BuildTimelineTab } from "@/src/features/build/components/BuildTimelineTab";
+import { BuildManagementCard } from "@/src/features/build/components/BuildManagementCard";
 import { radius, spacing, theme } from "@/src/shared/theme";
 import {
   archiveMotorcycleById,
@@ -370,39 +365,10 @@ export function BuildDetailScreen({
             />
           ) : null}
         </View>
-        <AppCard style={styles.dangerZoneCard}>
-          <View style={styles.dangerZoneText}>
-            <AppText variant="bodyMedium">Kelola Build</AppText>
-            <AppText
-              variant="caption"
-              tone="secondary"
-              style={styles.dangerZoneDescription}
-            >
-              Arsipkan motor jika sudah tidak digunakan lagi. Data tidak dihapus
-              permanen.
-            </AppText>
-          </View>
-
-          <Pressable
-            disabled={removingMotorcycle}
-            onPress={handleArchiveMotorcycle}
-            style={({ pressed }) => [
-              styles.removeMotorcycleButton,
-              pressed && styles.pressed,
-              removingMotorcycle && styles.disabledButton,
-            ]}
-          >
-            {removingMotorcycle ? (
-              <ActivityIndicator size="small" color={theme.danger} />
-            ) : (
-              <Trash2 size={16} color={theme.danger} />
-            )}
-
-            <AppText variant="caption" style={styles.removeMotorcycleText}>
-              {removingMotorcycle ? "Memproses..." : "Hapus"}
-            </AppText>
-          </Pressable>
-        </AppCard>
+        <BuildManagementCard
+          removingMotorcycle={removingMotorcycle}
+          onRemoveMotorcycle={handleArchiveMotorcycle}
+        />
       </View>
     </AppScreen>
   );
@@ -462,34 +428,5 @@ const styles = StyleSheet.create({
   centerText: {
     maxWidth: 280,
     textAlign: "center",
-  },
-  removeMotorcycleButton: {
-    minHeight: 36,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: "rgba(255, 91, 91, 0.35)",
-    backgroundColor: "rgba(255, 91, 91, 0.08)",
-    paddingHorizontal: spacing.sm,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.xs,
-  },
-  removeMotorcycleText: {
-    color: theme.danger,
-  },
-  dangerZoneCard: {
-    marginTop: spacing.section,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.md,
-  },
-  dangerZoneText: {
-    flex: 1,
-  },
-  dangerZoneDescription: {
-    marginTop: spacing.xs,
-    lineHeight: 18,
   },
 });
