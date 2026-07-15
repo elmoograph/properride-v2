@@ -2,9 +2,7 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import {
   Archive,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
-  Edit3,
   Gauge,
   MapPin,
   Package,
@@ -29,6 +27,8 @@ import {
   AppText,
 } from "@/src/shared/components";
 import { GarageGalleryGrid } from "@/src/features/garage/components/GarageGalleryGrid";
+import { BuildHero } from "@/src/features/build/components/BuildHero";
+import { BuildInfoSection } from "@/src/features/build/components/BuildInfoSection";
 import { colors, radius, spacing, theme } from "@/src/shared/theme";
 import {
   archiveMotorcycleById,
@@ -322,107 +322,25 @@ export function BuildDetailScreen({
   return (
     <AppScreen scrollable padded={false}>
       <View style={styles.heroWrap}>
-        {motorcycleImageUrl ? (
-          <Image
-            source={{ uri: motorcycleImageUrl }}
-            style={styles.heroImage}
-          />
-        ) : (
-          <View style={[styles.heroImage, styles.heroPlaceholder]}>
-            <AppText variant="caption" tone="secondary">
-              Foto motor belum ditambahkan.
-            </AppText>
-          </View>
-        )}
-
-        <View style={styles.heroOverlay} />
-
-        <View style={styles.topActions}>
-          {showBackButton ? (
-            <Pressable style={styles.iconButton} onPress={() => router.back()}>
-              <ChevronLeft size={22} color={theme.textPrimary} />
-            </Pressable>
-          ) : (
-            <View />
-          )}
-
-          <Pressable
-            style={styles.iconButton}
-            onPress={() => router.push(`/motorcycle/edit/${motorcycle.id}`)}
-          >
-            <Edit3 size={18} color={theme.textPrimary} />
-          </Pressable>
-        </View>
+        <BuildHero
+          imageUrl={motorcycleImageUrl}
+          motorcycleId={motorcycle.id}
+          showBackButton={showBackButton}
+        />
       </View>
 
       <View style={styles.content}>
-        <View style={styles.buildInfoSection}>
-          <Pressable
-            onPress={() => router.push("/(tabs)/profile")}
-            style={({ pressed }) => [
-              styles.builderNameButton,
-              pressed && styles.pressed,
-            ]}
-          >
-            <AppText variant="bodyMedium" tone="accent" numberOfLines={1}>
-              {builderName}
-            </AppText>
-          </Pressable>
-
-          <View style={styles.motorcycleTitleBlock}>
-            <View style={styles.motorcycleMetaRow}>
-              <AppText
-                variant="titleLarge"
-                style={styles.title}
-                numberOfLines={1}
-              >
-                {motorcycleTitle}
-              </AppText>
-              <View style={styles.yearPill}>
-                <AppText variant="tiny" tone="accent">
-                  {motorcycle.year}
-                </AppText>
-              </View>
-            </View>
-            <View style={styles.motorcycleMetaRow}>
-              <View style={styles.locationMeta}>
-                <MapPin size={14} color={theme.primary} />
-                <AppText variant="caption" tone="secondary" numberOfLines={1}>
-                  {builderLocation}
-                </AppText>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.quickStatsRow}>
-            <View style={styles.quickStatItem}>
-              <AppText variant="caption" tone="secondary">
-                Parts
-              </AppText>
-              <AppText variant="bodyMedium">{parts.length}</AppText>
-            </View>
-
-            <View style={styles.quickStatDivider} />
-
-            <View style={styles.quickStatItem}>
-              <AppText variant="caption" tone="secondary">
-                Mesin
-              </AppText>
-              <AppText variant="bodyMedium" numberOfLines={1}>
-                {motorcycleEngineInfo}
-              </AppText>
-            </View>
-
-            <View style={styles.quickStatDivider} />
-
-            <View style={styles.quickStatItem}>
-              <AppText variant="caption" tone="secondary">
-                Gallery
-              </AppText>
-              <AppText variant="bodyMedium">{galleryItems.length}</AppText>
-            </View>
-          </View>
-        </View>
+        <BuildInfoSection
+          builderName={builderName}
+          builderLocation={builderLocation}
+          motorcycleTitle={motorcycleTitle}
+          motorcycleBrand={motorcycle.brand}
+          motorcycleModel={motorcycle.model}
+          motorcycleYear={motorcycle.year}
+          motorcycleEngineInfo={motorcycleEngineInfo}
+          partsCount={parts.length}
+          galleryCount={galleryItems.length}
+        />
         <View style={styles.tabBar}>
           {detailTabs.map((tab) => {
             const isActive = activeTab === tab.value;
@@ -832,37 +750,6 @@ const styles = StyleSheet.create({
     minHeight: 420,
     backgroundColor: theme.surfaceSoft,
   },
-  heroImage: {
-    width: "100%",
-    height: "100%",
-  },
-  heroOverlay: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: "rgba(11, 15, 20, 0.16)",
-  },
-  topActions: {
-    position: "absolute",
-    left: spacing.lg,
-    right: spacing.lg,
-    top: spacing.section,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.pill,
-    backgroundColor: "rgba(11, 15, 20, 0.72)",
-    borderWidth: 1,
-    borderColor: theme.borderSoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   content: {
     marginTop: -40,
     borderTopLeftRadius: radius.xl,
@@ -1053,14 +940,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     lineHeight: 18,
   },
-  heroPlaceholder: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: spacing.lg,
-  },
-  motorcycleMeta: {
-    marginTop: -spacing.xs,
-  },
   removeMotorcycleButton: {
     minHeight: 36,
     borderRadius: radius.pill,
@@ -1090,59 +969,11 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     lineHeight: 18,
   },
-  buildInfoSection: {
-    gap: 0,
-  },
-  builderNameButton: {
-    alignSelf: "flex-start",
-  },
-  motorcycleTitleBlock: {
-    marginTop: spacing.sm,
-    gap: spacing.xs,
-  },
-  motorcycleMetaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    flexWrap: "wrap",
-  },
   locationMeta: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.xs,
     flexShrink: 1,
-  },
-  yearPill: {
-    minHeight: 26,
-    borderRadius: radius.pill,
-    backgroundColor: theme.primarySoft,
-    borderWidth: 1,
-    borderColor: theme.borderSoft,
-    paddingHorizontal: spacing.sm,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  quickStatsRow: {
-    marginTop: spacing.lg,
-    minHeight: 64,
-    borderRadius: radius.lg,
-    backgroundColor: theme.surface,
-    borderWidth: 1,
-    borderColor: theme.borderSoft,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: spacing.md,
-  },
-  quickStatItem: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.xs,
-  },
-  quickStatDivider: {
-    width: 1,
-    height: 34,
-    backgroundColor: theme.borderSoft,
   },
   sectionHeaderText: {
     flex: 1,
