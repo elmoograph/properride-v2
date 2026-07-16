@@ -8,6 +8,21 @@ type BuildTimelineTabProps = {
   timelineItems: MotorcycleTimelineItemRow[];
 };
 
+function getTimelineActionLabel(action: MotorcycleTimelineItemRow["action"]) {
+  switch (action) {
+    case "part_added":
+      return "Part ditambahkan";
+    case "part_removed":
+      return "Part dilepas";
+    case "gallery_added":
+      return "Gallery ditambahkan";
+    case "motorcycle_updated":
+      return "Detail motor diperbarui";
+    default:
+      return "Update build";
+  }
+}
+
 export function BuildTimelineTab({ timelineItems }: BuildTimelineTabProps) {
   return (
     <View>
@@ -48,7 +63,7 @@ export function BuildTimelineTab({ timelineItems }: BuildTimelineTabProps) {
                 <AppCard style={styles.timelineCard}>
                   <View style={styles.timelineTopRow}>
                     <AppText variant="caption" tone="accent">
-                      {item.action}
+                      {getTimelineActionLabel(item.action)}
                     </AppText>
 
                     <AppText variant="caption" tone="muted">
