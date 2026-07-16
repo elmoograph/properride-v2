@@ -298,6 +298,7 @@ export type Database = {
       motorcycle_status: MotorcycleStatus;
       post_status: PostStatus;
       post_media_type: PostMediaType;
+      gallery_media_type: GalleryMediaType;
       timeline_action: TimelineAction;
     };
     CompositeTypes: Record<string, never>;
