@@ -299,8 +299,6 @@ export function BuildDetailScreen({
           builderName={builderName}
           builderLocation={builderLocation}
           motorcycleTitle={motorcycleTitle}
-          motorcycleBrand={motorcycle.brand}
-          motorcycleModel={motorcycle.model}
           motorcycleYear={motorcycle.year}
           motorcycleEngineInfo={motorcycleEngineInfo}
           partsCount={parts.length}

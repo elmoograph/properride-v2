@@ -9,8 +9,6 @@ type BuildInfoSectionProps = {
   builderName: string;
   builderLocation: string;
   motorcycleTitle: string;
-  motorcycleBrand: string;
-  motorcycleModel: string;
   motorcycleYear: string;
   motorcycleEngineInfo: string;
   partsCount: number;
