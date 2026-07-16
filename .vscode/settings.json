@@ -1,0 +1,9 @@
+{
+  "[json]": {
+    "editor.formatOnSave": false
+  },
+  "[jsonc]": {
+    "editor.formatOnSave": false
+  },
+  "prettier.disableLanguages": ["json", "jsonc"]
+}
