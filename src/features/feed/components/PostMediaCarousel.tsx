@@ -1,3 +1,4 @@
+import { Play } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import {
   FlatList,
@@ -52,11 +53,39 @@ export function PostMediaCarousel({ post, onPress }: PostMediaCarouselProps) {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={handleScroll}
-        renderItem={({ item }) => (
-          <Pressable onPress={onPress} style={{ width }}>
-            <Image source={{ uri: item.url }} style={styles.image} />
-          </Pressable>
-        )}
+        renderItem={({ item }) => {
+          const isVideo = item.type === "video";
+
+          return (
+            <Pressable onPress={onPress} style={{ width }}>
+              {isVideo ? (
+                <View style={styles.videoPlaceholder}>
+                  <View style={styles.playButton}>
+                    <Play
+                      size={26}
+                      color={theme.textPrimary}
+                      fill={theme.textPrimary}
+                    />
+                  </View>
+
+                  <AppText
+                    variant="caption"
+                    tone="secondary"
+                    style={styles.videoLabel}
+                  >
+                    Video
+                  </AppText>
+                </View>
+              ) : (
+                <Image
+                  source={{ uri: item.url }}
+                  style={styles.image}
+                  resizeMode="cover"
+                />
+              )}
+            </Pressable>
+          );
+        }}
       />
 
       {mediaItems.length > 1 ? (
@@ -94,6 +123,26 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 4 / 5,
     backgroundColor: theme.surfaceSoft,
+  },
+  videoPlaceholder: {
+    width: "100%",
+    aspectRatio: 4 / 5,
+    backgroundColor: theme.surfaceSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  playButton: {
+    width: 62,
+    height: 62,
+    borderRadius: 999,
+    backgroundColor: "rgba(11, 15, 20, 0.72)",
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  videoLabel: {
+    marginTop: spacing.sm,
   },
   counterPill: {
     position: "absolute",
