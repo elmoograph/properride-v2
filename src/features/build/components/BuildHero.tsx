@@ -19,7 +19,11 @@ export function BuildHero({
   return (
     <View style={styles.heroWrap}>
       {imageUrl ? (
-        <Image source={{ uri: imageUrl }} style={styles.heroImage} />
+        <Image
+          source={{ uri: imageUrl }}
+          style={styles.heroImage}
+          resizeMode="cover"
+        />
       ) : (
         <View style={[styles.heroImage, styles.heroPlaceholder]}>
           <AppText variant="caption" tone="secondary">
