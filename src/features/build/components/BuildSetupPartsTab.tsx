@@ -129,42 +129,43 @@ export function BuildSetupPartsTab({
                 {isExpanded ? (
                   <View style={styles.partList}>
                     {group.parts.map((part) => (
-                      <Pressable
-                        key={part.id}
-                        onPress={() => router.push(`/part/edit/${part.id}`)}
-                        style={({ pressed }) => [
-                          styles.partRow,
-                          pressed && styles.pressed,
-                        ]}
-                      >
-                        <View style={styles.partThumbnail}>
-                          <Package size={18} color={theme.primary} />
-                        </View>
+                      <View key={part.id} style={styles.partRow}>
+                        <Pressable
+                          onPress={() => router.push(`/part/edit/${part.id}`)}
+                          style={({ pressed }) => [
+                            styles.partMainAction,
+                            pressed && styles.pressed,
+                          ]}
+                        >
+                          <View style={styles.partThumbnail}>
+                            <Package size={18} color={theme.primary} />
+                          </View>
 
-                        <View style={styles.partText}>
-                          <AppText variant="bodyMedium" numberOfLines={1}>
-                            {part.name}
-                          </AppText>
+                          <View style={styles.partText}>
+                            <AppText variant="bodyMedium" numberOfLines={1}>
+                              {part.name}
+                            </AppText>
 
-                          <AppText
-                            variant="caption"
-                            tone="secondary"
-                            style={styles.partMeta}
-                            numberOfLines={1}
-                          >
-                            {part.brand} · {part.category}
-                          </AppText>
-
-                          {part.description ? (
                             <AppText
                               variant="caption"
-                              tone="muted"
-                              style={styles.partDescription}
+                              tone="secondary"
+                              style={styles.partMeta}
+                              numberOfLines={1}
                             >
-                              {part.description}
+                              {part.brand} · {part.category}
                             </AppText>
-                          ) : null}
-                        </View>
+
+                            {part.description ? (
+                              <AppText
+                                variant="caption"
+                                tone="muted"
+                                style={styles.partDescription}
+                              >
+                                {part.description}
+                              </AppText>
+                            ) : null}
+                          </View>
+                        </Pressable>
 
                         <Pressable
                           disabled={archivingPartId === part.id}
@@ -185,7 +186,7 @@ export function BuildSetupPartsTab({
                             <Archive size={16} color={theme.primary} />
                           )}
                         </Pressable>
-                      </Pressable>
+                      </View>
                     ))}
                   </View>
                 ) : null}
@@ -286,6 +287,13 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: theme.borderSoft,
+  },
+  partMainAction: {
+    flex: 1,
+    minHeight: 66,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
   },
   partThumbnail: {
     width: 42,
