@@ -1,6 +1,6 @@
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { ChevronLeft, ImagePlus, Minus, Plus } from "lucide-react-native";
+import { ChevronLeft, ImagePlus, Minus } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -29,11 +29,15 @@ import { radius, spacing, theme } from "@/src/shared/theme";
 import { MotorcycleSelectCard } from "@/src/features/create/components/MotorcycleSelectCard";
 import {
   createStorageImagePath,
-  uploadImageToStorage,
+  uploadMediaToStorage,
 } from "@/src/shared/lib/storage";
 
 type CreatePostStep = "media" | "caption" | "motorcycle" | "summary";
 type PostVisibility = "public" | "private";
+type SelectedPostMedia = {
+  uri: string;
+  mediaType: "image" | "video";
+};
 
 const maxMediaCount = 10;
 function mapMotorcycleToSelectCardData(
@@ -57,7 +61,7 @@ function mapMotorcycleToSelectCardData(
 export function CreatePostScreen() {
   const { user } = useAuth();
   const [step, setStep] = useState<CreatePostStep>("media");
-  const [selectedMediaUris, setSelectedMediaUris] = useState<string[]>([]);
+  const [selectedMedia, setSelectedMedia] = useState<SelectedPostMedia[]>([]);
   const [caption, setCaption] = useState("");
   const [selectedMotorcycleId, setSelectedMotorcycleId] = useState<
     string | null
@@ -68,8 +72,7 @@ export function CreatePostScreen() {
   const [loadingMotorcycles, setLoadingMotorcycles] = useState(true);
   const [motorcycleError, setMotorcycleError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const mediaCount = selectedMediaUris.length;
-
+  const mediaCount = selectedMedia.length;
   const selectedMotorcycle = motorcycles.find(
     (motorcycle) => motorcycle.id === selectedMotorcycleId,
   );
@@ -200,25 +203,32 @@ export function CreatePostScreen() {
       throw new Error("Sesi tidak aktif.");
     }
 
-    if (selectedMediaUris.length === 0) {
-      throw new Error("Pilih minimal satu foto untuk Post.");
+    if (selectedMedia.length === 0) {
+      throw new Error("Pilih minimal satu media untuk Post.");
     }
 
-    const uploadedUrls = await Promise.all(
-      selectedMediaUris.map((uri) => {
+    const uploadedMedia = await Promise.all(
+      selectedMedia.map(async (media) => {
         const path = createStorageImagePath({
           userId: user.id,
           folder: "posts",
+          extension: media.mediaType === "video" ? "mp4" : "jpg",
         });
 
-        return uploadImageToStorage({
-          uri,
+        const url = await uploadMediaToStorage({
+          uri: media.uri,
           path,
+          mediaType: media.mediaType,
         });
+
+        return {
+          url,
+          type: media.mediaType,
+        };
       }),
     );
 
-    return uploadedUrls;
+    return uploadedMedia;
   }
 
   async function handleCreatePost() {
@@ -233,14 +243,14 @@ export function CreatePostScreen() {
 
       await ensureProfileForUser(user);
 
-      const uploadedMediaUrls = await uploadSelectedPostMedia();
+      const uploadedMediaItems = await uploadSelectedPostMedia();
 
       await createPostWithMedia({
         userId: user.id,
         motorcycleId: selectedMotorcycleId,
         caption: caption.trim(),
         visibility,
-        mediaUrls: uploadedMediaUrls,
+        mediaItems: uploadedMediaItems,
       });
 
       Alert.alert("Post dibuat", "Post berhasil dibuat dan masuk ke Feed.", [
@@ -267,15 +277,15 @@ export function CreatePostScreen() {
     if (!permission.granted) {
       Alert.alert(
         "Izin diperlukan",
-        "Izinkan akses galeri untuk memilih foto post.",
+        "Izinkan akses galeri untuk memilih foto atau video post.",
       );
       return;
     }
 
-    const remainingSlots = maxMediaCount - selectedMediaUris.length;
+    const remainingSlots = maxMediaCount - selectedMedia.length;
 
     if (remainingSlots <= 0) {
-      Alert.alert("Batas media tercapai", `Maksimal ${maxMediaCount} foto.`);
+      Alert.alert("Batas media tercapai", `Maksimal ${maxMediaCount} media.`);
       return;
     }
 
@@ -283,7 +293,7 @@ export function CreatePostScreen() {
 
     try {
       result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
+        mediaTypes: ["images", "videos"],
         allowsMultipleSelection: true,
         selectionLimit: remainingSlots,
         quality: 0.88,
@@ -293,10 +303,10 @@ export function CreatePostScreen() {
       const message =
         error instanceof Error
           ? error.message
-          : "Terjadi kesalahan saat memilih foto.";
+          : "Terjadi kesalahan saat memilih media.";
 
       Alert.alert(
-        "Gagal memilih foto",
+        "Gagal memilih media",
         `${message}\n\nCoba pilih foto dari galeri lokal atau download foto dari Google Photos terlebih dahulu.`,
       );
       return;
@@ -306,22 +316,36 @@ export function CreatePostScreen() {
       return;
     }
 
-    const nextUris = result.assets
-      .map((asset) => asset.uri)
-      .filter((uri): uri is string => Boolean(uri));
+    const nextMedia = result.assets
+      .map((asset): SelectedPostMedia | null => {
+        if (!asset.uri) {
+          return null;
+        }
 
-    if (nextUris.length === 0) {
-      Alert.alert("Foto tidak valid", "Pilih foto lain untuk Post.");
+        return {
+          uri: asset.uri,
+          mediaType: asset.type === "video" ? "video" : "image",
+        };
+      })
+      .filter((item): item is SelectedPostMedia => Boolean(item));
+
+    if (nextMedia.length === 0) {
+      Alert.alert(
+        "Media tidak valid",
+        "Pilih foto atau video lain untuk Post.",
+      );
       return;
     }
 
-    setSelectedMediaUris((current) =>
-      [...current, ...nextUris].slice(0, maxMediaCount),
+    setSelectedMedia((current) =>
+      [...current, ...nextMedia].slice(0, maxMediaCount),
     );
   }
 
-  function handleRemoveMedia(uri: string) {
-    setSelectedMediaUris((current) => current.filter((item) => item !== uri));
+  function handleRemoveMedia(mediaIndex: number) {
+    setSelectedMedia((current) =>
+      current.filter((_, index) => index !== mediaIndex),
+    );
   }
 
   return (
@@ -357,7 +381,7 @@ export function CreatePostScreen() {
       <View style={styles.content}>
         {isMediaStep ? (
           <MediaStep
-            selectedMediaUris={selectedMediaUris}
+            selectedMedia={selectedMedia}
             onPickMedia={handlePickMedia}
             onRemoveMedia={handleRemoveMedia}
           />
@@ -407,15 +431,15 @@ export function CreatePostScreen() {
 }
 
 function MediaStep({
-  selectedMediaUris,
+  selectedMedia,
   onPickMedia,
   onRemoveMedia,
 }: {
-  selectedMediaUris: string[];
+  selectedMedia: SelectedPostMedia[];
   onPickMedia: () => void;
-  onRemoveMedia: (uri: string) => void;
+  onRemoveMedia: (mediaIndex: number) => void;
 }) {
-  const mediaCount = selectedMediaUris.length;
+  const mediaCount = selectedMedia.length;
   const hasMedia = mediaCount > 0;
   const isMaxMedia = mediaCount >= maxMediaCount;
 
@@ -429,7 +453,7 @@ function MediaStep({
             tone="secondary"
             style={styles.sectionSubtitle}
           >
-            Pilih satu atau beberapa foto untuk post kamu.
+            Pilih satu atau beberapa foto/video untuk post kamu.
           </AppText>
         </View>
 
@@ -453,26 +477,42 @@ function MediaStep({
 
         <AppText variant="caption" tone="secondary" style={styles.mediaText}>
           {isMaxMedia
-            ? `Maksimal ${maxMediaCount} foto sudah dipilih.`
+            ? `Maksimal ${maxMediaCount} media sudah dipilih.`
             : hasMedia
-              ? "Tekan untuk menambahkan foto lagi."
-              : "Pilih foto dari perangkat kamu."}
+              ? "Tekan untuk menambahkan media lagi."
+              : "Pilih foto atau video dari perangkat kamu."}
         </AppText>
       </Pressable>
 
       {hasMedia ? (
         <View style={styles.mediaPreviewGrid}>
-          {selectedMediaUris.map((uri, index) => (
-            <View key={`${uri}-${index}`} style={styles.mediaPreviewItem}>
-              <Image
-                source={{ uri }}
-                style={styles.mediaPreviewImage}
-                resizeMode="cover"
-              />
+          {selectedMedia.map((media, index) => (
+            <View key={`${media.uri}-${index}`} style={styles.mediaPreviewItem}>
+              {media.mediaType === "image" ? (
+                <Image
+                  source={{ uri: media.uri }}
+                  style={styles.mediaPreviewImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.videoPreviewFallback}>
+                  <AppText variant="caption" tone="secondary">
+                    Video
+                  </AppText>
+                </View>
+              )}
+
+              {media.mediaType === "video" ? (
+                <View style={styles.mediaTypePill}>
+                  <AppText variant="tiny" style={styles.mediaTypePillText}>
+                    Video
+                  </AppText>
+                </View>
+              ) : null}
 
               <Pressable
                 style={styles.removeMediaButton}
-                onPress={() => onRemoveMedia(uri)}
+                onPress={() => onRemoveMedia(index)}
                 hitSlop={10}
               >
                 <Minus size={16} color={theme.textPrimary} />
@@ -490,7 +530,7 @@ function MediaStep({
       </View>
 
       <AppText variant="caption" tone="muted" style={styles.note}>
-        Foto akan diunggah saat Post dibuat.
+        Media akan diunggah saat Post dibuat.
       </AppText>
     </View>
   );
@@ -975,5 +1015,28 @@ const styles = StyleSheet.create({
     borderColor: theme.borderSoft,
     alignItems: "center",
     justifyContent: "center",
+  },
+  videoPreviewFallback: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: theme.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mediaTypePill: {
+    position: "absolute",
+    left: spacing.xs,
+    bottom: spacing.xs,
+    minHeight: 20,
+    borderRadius: radius.pill,
+    backgroundColor: "rgba(11, 15, 20, 0.78)",
+    borderWidth: 1,
+    borderColor: theme.borderSoft,
+    paddingHorizontal: spacing.xs,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mediaTypePillText: {
+    color: theme.textPrimary,
   },
 });
