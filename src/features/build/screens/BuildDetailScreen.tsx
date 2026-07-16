@@ -16,6 +16,10 @@ import { BuildInfoSection } from "@/src/features/build/components/BuildInfoSecti
 import { BuildSetupPartsTab } from "@/src/features/build/components/BuildSetupPartsTab";
 import { BuildTimelineTab } from "@/src/features/build/components/BuildTimelineTab";
 import { BuildManagementCard } from "@/src/features/build/components/BuildManagementCard";
+import {
+  BuildDetailTabs,
+  type BuildDetailTab,
+} from "@/src/features/build/components/BuildDetailTabs";
 import { radius, spacing, theme } from "@/src/shared/theme";
 import {
   archiveMotorcycleById,
@@ -37,26 +41,6 @@ import {
   listTimelineItemsByMotorcycleId,
 } from "@/src/features/garage/repositories/motorcyclePart.repository";
 
-type DetailTab = "setup" | "timeline" | "gallery";
-
-const detailTabs: Array<{
-  label: string;
-  value: DetailTab;
-}> = [
-  {
-    label: "Setup Parts",
-    value: "setup",
-  },
-  {
-    label: "Timeline",
-    value: "timeline",
-  },
-  {
-    label: "Gallery",
-    value: "gallery",
-  },
-];
-
 const screenHeight = Dimensions.get("window").height;
 const buildHeroHeight = Math.round(screenHeight * 0.6);
 
@@ -75,7 +59,7 @@ export function BuildDetailScreen({
 }: BuildDetailScreenProps = {}) {
   const { id } = useLocalSearchParams<{ id: string }>();
   const resolvedMotorcycleId = motorcycleId ?? id;
-  const [activeTab, setActiveTab] = useState<DetailTab>("setup");
+  const [activeTab, setActiveTab] = useState<BuildDetailTab>("setup");
 
   const [motorcycle, setMotorcycle] = useState<MotorcycleRow | null>(null);
   const [builderProfile, setBuilderProfile] = useState<ProfileRow | null>(null);
@@ -323,26 +307,7 @@ export function BuildDetailScreen({
           partsCount={parts.length}
           galleryCount={galleryItems.length}
         />
-        <View style={styles.tabBar}>
-          {detailTabs.map((tab) => {
-            const isActive = activeTab === tab.value;
-
-            return (
-              <Pressable
-                key={tab.value}
-                onPress={() => setActiveTab(tab.value)}
-                style={[styles.tabButton, isActive && styles.tabButtonActive]}
-              >
-                <AppText
-                  variant="caption"
-                  tone={isActive ? "accent" : "secondary"}
-                >
-                  {tab.label}
-                </AppText>
-              </Pressable>
-            );
-          })}
-        </View>
+        <BuildDetailTabs activeTab={activeTab} onChangeTab={setActiveTab} />
 
         <View style={styles.tabContent}>
           {activeTab === "setup" ? (
@@ -388,27 +353,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xl,
     paddingBottom: spacing.section,
-  },
-  tabBar: {
-    marginTop: spacing.section,
-    minHeight: 44,
-    borderRadius: radius.pill,
-    backgroundColor: theme.surface,
-    borderWidth: 1,
-    borderColor: theme.borderSoft,
-    padding: spacing.xs,
-    flexDirection: "row",
-    gap: spacing.xs,
-  },
-  tabButton: {
-    flex: 1,
-    minHeight: 34,
-    borderRadius: radius.pill,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tabButtonActive: {
-    backgroundColor: theme.primarySoft,
   },
   tabContent: {
     marginTop: spacing.xl,
