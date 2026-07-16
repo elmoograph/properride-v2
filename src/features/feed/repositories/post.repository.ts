@@ -26,6 +26,11 @@ type PostCommentsCountRow = {
   post_id: string;
 };
 
+export type CreatePostMediaPayload = {
+  url: string;
+  type: "image" | "video";
+};
+
 export type CreatePostPayload = {
   userId: string;
   motorcycleId?: string | null;
@@ -33,6 +38,7 @@ export type CreatePostPayload = {
   visibility: Visibility;
   mediaCount?: number;
   mediaUrls?: string[];
+  mediaItems?: CreatePostMediaPayload[];
 };
 
 export async function createPostWithMedia({
@@ -42,6 +48,7 @@ export async function createPostWithMedia({
   visibility,
   mediaCount = 1,
   mediaUrls,
+  mediaItems,
 }: CreatePostPayload): Promise<PostWithMedia> {
   const { data: post, error: postError } = await supabase
     .from("posts")
@@ -60,14 +67,19 @@ export async function createPostWithMedia({
   }
 
   const mediaSources =
-    mediaUrls && mediaUrls.length > 0
-      ? mediaUrls
-      : Array.from({ length: mediaCount }).map(() => TEMP_POST_IMAGE_URL);
+    mediaItems && mediaItems.length > 0
+      ? mediaItems
+      : mediaUrls && mediaUrls.length > 0
+        ? mediaUrls.map((url) => ({ url, type: "image" as const }))
+        : Array.from({ length: mediaCount }).map(() => ({
+            url: TEMP_POST_IMAGE_URL,
+            type: "image" as const,
+          }));
 
-  const mediaRows = mediaSources.map((mediaUrl, index) => ({
+  const mediaRows = mediaSources.map((media, index) => ({
     post_id: post.id,
-    media_url: mediaUrl,
-    media_type: "image" as const,
+    media_url: media.url,
+    media_type: media.type,
     order_index: index,
   }));
 
