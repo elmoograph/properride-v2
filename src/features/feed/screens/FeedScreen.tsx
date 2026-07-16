@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  Share,
   StyleSheet,
   View,
 } from "react-native";
@@ -211,6 +212,21 @@ export function FeedScreen() {
     }
   }
 
+  async function handleSharePost(post: FeedPostType) {
+    try {
+      await Share.share({
+        message: `${post.builderName} di ProperRide\n\n${post.caption}`,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat membagikan post.";
+
+      Alert.alert("Gagal membagikan post", message);
+    }
+  }
+
   return (
     <AppScreen scrollable>
       <View style={styles.header}>
@@ -283,6 +299,7 @@ export function FeedScreen() {
                 updatingSave={updatingSaveMap[post.id] ?? false}
                 onToggleLike={() => handleToggleLike(post)}
                 onToggleSave={() => handleToggleSave(post)}
+                onShare={() => handleSharePost(post)}
                 onPress={() => router.push(`/post/${post.id}`)}
                 onPressMotorcycle={() => {
                   if (post.relatedMotorcycleId) {

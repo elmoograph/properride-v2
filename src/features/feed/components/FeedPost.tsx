@@ -24,6 +24,7 @@ type FeedPostProps = {
   onPressMotorcycle?: () => void;
   onToggleLike?: () => void;
   onToggleSave?: () => void;
+  onShare?: () => void;
 };
 
 export function FeedPost({
@@ -37,6 +38,7 @@ export function FeedPost({
   onPressMotorcycle,
   onToggleLike,
   onToggleSave,
+  onShare,
 }: FeedPostProps) {
   const hasRelatedMotorcycle = Boolean(post.relatedMotorcycleId);
 
@@ -72,7 +74,7 @@ export function FeedPost({
           >
             <Bike size={16} color={theme.primary} />
             <AppText variant="caption" tone="accent" numberOfLines={1}>
-              {post.relatedMotorcycleName ?? "Lihat Build"}
+              {post.relatedMotorcycleName || "Lihat Build"}
             </AppText>
           </Pressable>
         ) : null}
@@ -108,7 +110,7 @@ export function FeedPost({
             <Pressable
               style={styles.actionButton}
               hitSlop={10}
-              onPress={onPress}
+              onPress={onShare}
             >
               <Send size={21} color={theme.textPrimary} />
             </Pressable>
