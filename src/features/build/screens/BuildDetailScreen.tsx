@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
-  Pressable,
   StyleSheet,
   View,
 } from "react-native";
@@ -356,12 +355,6 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     marginTop: spacing.xl,
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  pressed: {
-    opacity: 0.82,
   },
   centerState: {
     flex: 1,
