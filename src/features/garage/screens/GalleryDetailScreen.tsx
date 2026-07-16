@@ -69,7 +69,7 @@ export function GalleryDetailScreen() {
 
       async function loadGalleryItem() {
         if (!id) {
-          setScreenError("Foto tidak ditemukan.");
+          setScreenError("Media tidak ditemukan.");
           setLoading(false);
           return;
         }
@@ -81,7 +81,7 @@ export function GalleryDetailScreen() {
           const data = await getGalleryItemById(id);
 
           if (!data) {
-            throw new Error("Foto gallery tidak ditemukan.");
+            throw new Error("Media gallery tidak ditemukan.");
           }
           let postCaption = "";
           let postLiked = false;
@@ -118,7 +118,7 @@ export function GalleryDetailScreen() {
           const message =
             error instanceof Error
               ? error.message
-              : "Terjadi kesalahan saat memuat foto.";
+              : "Terjadi kesalahan saat memuat media.";
 
           if (isActive) {
             setScreenError(message);
@@ -188,7 +188,7 @@ export function GalleryDetailScreen() {
     }
   }
 
-  function handleArchivePhoto() {
+  function handleArchiveMedia() {
     if (!galleryItem) {
       return;
     }
@@ -197,10 +197,10 @@ export function GalleryDetailScreen() {
 
     const hasRelatedPost = Boolean(galleryItem.related_post_id);
 
-    const title = hasRelatedPost ? "Hapus foto dari Post?" : "Archive foto?";
+    const title = hasRelatedPost ? "Hapus media dari Post?" : "Archive media?";
     const message = hasRelatedPost
-      ? "Foto ini akan dihapus dari Gallery dan dari carousel Feed. Post tetap ada jika masih memiliki foto lain."
-      : "Foto ini akan diarsipkan dari Gallery motor.";
+      ? "Media ini akan dihapus dari Gallery dan dari carousel Feed. Post tetap ada jika masih memiliki media lain."
+      : "Media ini akan diarsipkan dari Gallery motor.";
 
     Alert.alert(title, message, [
       {
@@ -208,7 +208,7 @@ export function GalleryDetailScreen() {
         style: "cancel",
       },
       {
-        text: hasRelatedPost ? "Hapus Foto" : "Archive",
+        text: hasRelatedPost ? "Hapus Media" : "Archive",
         style: "destructive",
         onPress: async () => {
           try {
@@ -234,10 +234,10 @@ export function GalleryDetailScreen() {
             }
 
             Alert.alert(
-              hasRelatedPost ? "Foto dihapus" : "Foto diarsipkan",
+              hasRelatedPost ? "Media dihapus" : "Media diarsipkan",
               hasRelatedPost
-                ? "Foto berhasil dihapus dari Gallery dan Feed."
-                : "Foto berhasil diarsipkan dari Gallery.",
+                ? "Media berhasil dihapus dari Gallery dan Feed."
+                : "Media berhasil diarsipkan dari Gallery.",
               [
                 {
                   text: "OK",
@@ -249,9 +249,9 @@ export function GalleryDetailScreen() {
             const message =
               error instanceof Error
                 ? error.message
-                : "Terjadi kesalahan saat memproses foto.";
+                : "Terjadi kesalahan saat memproses media.";
 
-            Alert.alert("Gagal memproses foto", message);
+            Alert.alert("Gagal memproses media", message);
           } finally {
             setDeleting(false);
           }
@@ -365,9 +365,9 @@ export function GalleryDetailScreen() {
     return (
       <AppScreen>
         <View style={styles.centerState}>
-          <AppText variant="title">Foto tidak ditemukan</AppText>
+          <AppText variant="title">Media tidak ditemukan</AppText>
           <AppText tone="secondary" style={styles.centerText}>
-            {screenError ?? "Data foto belum tersedia atau sudah dihapus."}
+            {screenError ?? "Data media belum tersedia atau sudah dihapus."}
           </AppText>
           <AppButton onPress={() => router.back()}>Kembali</AppButton>
         </View>
@@ -441,7 +441,7 @@ export function GalleryDetailScreen() {
 
                 <Pressable
                   disabled={deleting}
-                  onPress={handleArchivePhoto}
+                  onPress={handleArchiveMedia}
                   style={({ pressed }) => [
                     styles.menuItem,
                     pressed && styles.pressed,
@@ -460,8 +460,8 @@ export function GalleryDetailScreen() {
                         ? "Menghapus..."
                         : "Mengarsipkan..."
                       : hasRelatedPost
-                        ? "Hapus Foto dari Post"
-                        : "Archive Foto"}
+                        ? "Hapus Media dari Post"
+                        : "Archive Media"}
                   </AppText>
                 </Pressable>
               </View>
