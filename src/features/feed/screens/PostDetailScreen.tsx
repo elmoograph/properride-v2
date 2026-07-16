@@ -268,6 +268,13 @@ export function PostDetailScreen() {
     }
   }
 
+  function handleSharePost() {
+    Alert.alert(
+      "Share belum tersedia",
+      "Fitur share native akan kita sambungkan di tahap berikutnya.",
+    );
+  }
+
   if (loading) {
     return (
       <AppScreen>
@@ -345,7 +352,8 @@ export function PostDetailScreen() {
                   variant="caption"
                   style={styles.relatedMotorcyclePillText}
                 >
-                  {relatedMotorcycle.model}
+                  {relatedMotorcycle.name ??
+                    `${relatedMotorcycle.brand} ${relatedMotorcycle.model}`.trim()}
                 </AppText>
               </Pressable>
             ) : null}
@@ -372,12 +380,23 @@ export function PostDetailScreen() {
               <AppText variant="caption">{likesCount} suka</AppText>
             </Pressable>
 
-            <Pressable style={styles.engagementButton}>
+            <Pressable
+              style={styles.engagementButton}
+              onPress={() =>
+                Alert.alert(
+                  "Komentar",
+                  "Tulis komentar di form komentar di bawah post.",
+                )
+              }
+            >
               <MessageCircle size={20} color={theme.textPrimary} />
               <AppText variant="caption">{post.commentsCount} komentar</AppText>
             </Pressable>
 
-            <Pressable style={styles.engagementIconButton}>
+            <Pressable
+              style={styles.engagementIconButton}
+              onPress={handleSharePost}
+            >
               <Share2 size={20} color={theme.textPrimary} />
             </Pressable>
           </View>
