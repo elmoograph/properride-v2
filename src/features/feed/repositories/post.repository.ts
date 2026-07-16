@@ -1,5 +1,6 @@
 import { supabase } from "@/src/shared/lib/supabase";
 import type {
+  MotorcycleRow,
   PostMediaRow,
   PostRow,
   ProfileRow,
@@ -269,6 +270,33 @@ async function mapPostsToFeedPosts(
     profiles.map((profile) => [profile.id, profile]),
   );
 
+  const motorcycleIds = Array.from(
+    new Set(
+      posts
+        .map((post) => post.motorcycle_id)
+        .filter((motorcycleId): motorcycleId is string =>
+          Boolean(motorcycleId),
+        ),
+    ),
+  );
+
+  const motorcycleMap = new Map<string, MotorcycleRow>();
+
+  if (motorcycleIds.length > 0) {
+    const { data: motorcycles, error: motorcycleError } = await supabase
+      .from("motorcycles")
+      .select("*")
+      .in("id", motorcycleIds);
+
+    if (motorcycleError) {
+      throw motorcycleError;
+    }
+
+    motorcycles.forEach((motorcycle) => {
+      motorcycleMap.set(motorcycle.id, motorcycle);
+    });
+  }
+
   const postIds = posts.map((post) => post.id);
 
   const { data: likesRows, error: likesError } = await supabase
@@ -306,6 +334,13 @@ async function mapPostsToFeedPosts(
 
   return posts.map((post) => {
     const profile = profileMap.get(post.user_id);
+    const motorcycle = post.motorcycle_id
+      ? motorcycleMap.get(post.motorcycle_id)
+      : undefined;
+
+    const relatedMotorcycleName = motorcycle
+      ? (motorcycle.name ?? `${motorcycle.brand} ${motorcycle.model}`.trim())
+      : "";
     const sortedMedia = [...post.post_media].sort(
       (first, second) => first.order_index - second.order_index,
     );
@@ -330,9 +365,9 @@ async function mapPostsToFeedPosts(
       createdAt: formatPostDate(post.created_at),
       likesCount: likesCountMap.get(post.id) ?? 0,
       commentsCount: commentsCountMap.get(post.id) ?? 0,
-      relatedMotorcycleName: "",
+      relatedMotorcycleName,
       relatedMotorcycleId: post.motorcycle_id ?? undefined,
-      category: "Daily" satisfies MotorcycleType,
+      category: resolveMotorcycleCategory(motorcycle),
       visibility: post.visibility,
       status: post.status,
     };
@@ -344,6 +379,44 @@ function formatPostDate(value: string) {
     day: "numeric",
     month: "short",
   });
+}
+
+function resolveMotorcycleCategory(
+  motorcycle: MotorcycleRow | undefined,
+): MotorcycleType {
+  if (!motorcycle) {
+    return "Daily";
+  }
+
+  const searchableText =
+    `${motorcycle.name ?? ""} ${motorcycle.brand} ${motorcycle.model}`.toLowerCase();
+
+  if (searchableText.includes("nmax")) {
+    return "NMAX";
+  }
+
+  if (searchableText.includes("aerox")) {
+    return "Aerox";
+  }
+
+  if (searchableText.includes("pcx")) {
+    return "PCX";
+  }
+
+  if (searchableText.includes("vespa")) {
+    return "Vespa";
+  }
+
+  if (
+    searchableText.includes("r15") ||
+    searchableText.includes("cbr") ||
+    searchableText.includes("ninja") ||
+    searchableText.includes("sport")
+  ) {
+    return "Sport";
+  }
+
+  return "Daily";
 }
 
 export async function updatePostCaptionById(
