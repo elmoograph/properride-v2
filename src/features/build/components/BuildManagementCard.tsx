@@ -1,4 +1,4 @@
-import { Trash2 } from "lucide-react-native";
+import { Archive } from "lucide-react-native";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 
 import { AppCard, AppText } from "@/src/shared/components";
@@ -39,11 +39,11 @@ export function BuildManagementCard({
         {removingMotorcycle ? (
           <ActivityIndicator size="small" color={theme.danger} />
         ) : (
-          <Trash2 size={16} color={theme.danger} />
+          <Archive size={16} color={theme.danger} />
         )}
 
         <AppText variant="caption" style={styles.removeMotorcycleText}>
-          {removingMotorcycle ? "Memproses..." : "Hapus"}
+          {removingMotorcycle ? "Memproses..." : "Arsipkan"}
         </AppText>
       </Pressable>
     </AppCard>
