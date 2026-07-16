@@ -28,7 +28,7 @@ import { radius, spacing, theme } from "@/src/shared/theme";
 import type { MotorcycleRow } from "@/src/shared/types/database.types";
 import {
   createStorageImagePath,
-  uploadImageToStorage,
+  uploadMediaToStorage,
 } from "@/src/shared/lib/storage";
 
 type GalleryStep = "gallery" | "share" | "post";
@@ -248,11 +248,13 @@ export function AddGalleryScreen() {
         userId: user.id,
         folder: "gallery",
         ownerId: motorcycle.id,
+        extension: media.mediaType === "video" ? "mp4" : "jpg",
       });
 
-      const uploadedUrl = await uploadImageToStorage({
+      const uploadedUrl = await uploadMediaToStorage({
         uri: media.uri,
         path,
+        mediaType: media.mediaType,
       });
 
       uploadedMedia.push({
@@ -325,28 +327,21 @@ export function AddGalleryScreen() {
       return;
     }
 
-    const hasVideo = selectedMedia.some((media) => media.mediaType === "video");
-
-    if (hasVideo) {
-      Alert.alert(
-        "Video belum bisa dibagikan ke Feed",
-        "Untuk saat ini, video bisa disimpan ke Gallery saja. Share ke Feed akan kita sambungkan di tahap berikutnya.",
-      );
-      return;
-    }
-
     try {
       setSubmitting(true);
 
       const uploadedMedia = await uploadSelectedGalleryMedia();
-      const uploadedImageUrls = uploadedMedia.map((media) => media.url);
+      const uploadedPostMedia = uploadedMedia.map((media) => ({
+        url: media.url,
+        type: media.mediaType,
+      }));
 
       const createdPost = await createPostWithMedia({
         userId: user.id,
         motorcycleId: motorcycle.id,
         caption: postCaption.trim(),
         visibility: "public",
-        mediaUrls: uploadedImageUrls,
+        mediaItems: uploadedPostMedia,
       });
 
       await Promise.all(
