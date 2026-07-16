@@ -4,6 +4,7 @@ import {
   Heart,
   MessageCircle,
   MoreHorizontal,
+  Send,
 } from "lucide-react-native";
 import { Pressable, StyleSheet, View } from "react-native";
 
@@ -69,7 +70,10 @@ export function FeedPost({
             hitSlop={10}
             onPress={onPressMotorcycle}
           >
-            <Bike size={22} color={theme.primary} />
+            <Bike size={16} color={theme.primary} />
+            <AppText variant="caption" tone="accent" numberOfLines={1}>
+              {post.relatedMotorcycleName ?? "Lihat Build"}
+            </AppText>
           </Pressable>
         ) : null}
       </View>
@@ -99,6 +103,14 @@ export function FeedPost({
               onPress={onPress}
             >
               <MessageCircle size={22} color={theme.textPrimary} />
+            </Pressable>
+
+            <Pressable
+              style={styles.actionButton}
+              hitSlop={10}
+              onPress={onPress}
+            >
+              <Send size={21} color={theme.textPrimary} />
             </Pressable>
           </View>
 
@@ -170,14 +182,17 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: spacing.lg,
     bottom: spacing.lg,
-    width: 46,
-    height: 46,
+    maxWidth: 190,
+    minHeight: 38,
     borderRadius: radius.pill,
-    backgroundColor: theme.primarySoft,
+    backgroundColor: "rgba(11, 15, 20, 0.82)",
     borderWidth: 1,
     borderColor: theme.primary,
+    paddingHorizontal: spacing.md,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: spacing.xs,
   },
   content: {
     paddingHorizontal: spacing.lg,
