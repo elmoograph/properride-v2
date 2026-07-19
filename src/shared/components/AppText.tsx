@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { TextStyle } from "react-native";
+import type { TextProps, TextStyle } from "react-native";
 import { StyleSheet, Text } from "react-native";
 
 import { theme, typography } from "@/src/shared/theme";
@@ -13,6 +13,7 @@ type AppTextProps = {
   tone?: TextTone;
   style?: TextStyle;
   numberOfLines?: number;
+  onPress?: TextProps["onPress"];
 };
 
 const toneColor: Record<TextTone, string> = {
@@ -29,10 +30,12 @@ export function AppText({
   tone = "primary",
   style,
   numberOfLines,
+  onPress,
 }: AppTextProps) {
   return (
     <Text
       numberOfLines={numberOfLines}
+      onPress={onPress}
       style={[
         styles.base,
         typography[variant],

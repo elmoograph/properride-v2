@@ -367,6 +367,7 @@ async function mapPostsToFeedPosts(
       commentsCount: commentsCountMap.get(post.id) ?? 0,
       relatedMotorcycleName,
       relatedMotorcycleId: post.motorcycle_id ?? undefined,
+      relatedMotorcycleArchivedAt: motorcycle?.archived_at ?? null,
       category: resolveMotorcycleCategory(motorcycle),
       visibility: post.visibility,
       status: post.status,

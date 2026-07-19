@@ -16,9 +16,13 @@ type ProfileHeaderData = {
 
 type ProfileHeaderProps = {
   profile: ProfileHeaderData;
+  showGarageButton?: boolean;
 };
 
-export function ProfileHeader({ profile }: ProfileHeaderProps) {
+export function ProfileHeader({
+  profile,
+  showGarageButton = true,
+}: ProfileHeaderProps) {
   return (
     <View style={styles.container}>
       <View style={styles.identity}>
@@ -52,7 +56,7 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
         {profile.bio ?? "Ceritakan sedikit tentang gaya build dan motor kamu."}
       </AppText>
 
-      <Pressable
+      {showGarageButton ? <Pressable
         onPress={() => router.push("/(tabs)/garage")}
         style={({ pressed }) => [
           styles.garageButton,
@@ -73,7 +77,7 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
         </View>
 
         <ChevronRight size={18} color={theme.textMuted} />
-      </Pressable>
+      </Pressable> : null}
     </View>
   );
 }

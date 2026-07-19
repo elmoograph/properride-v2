@@ -22,6 +22,7 @@ type FeedPostProps = {
   likesCount?: number;
   onPress?: () => void;
   onPressMotorcycle?: () => void;
+  onPressBuilder?: () => void;
   onToggleLike?: () => void;
   onToggleSave?: () => void;
   onShare?: () => void;
@@ -36,6 +37,7 @@ export function FeedPost({
   likesCount = post.likesCount,
   onPress,
   onPressMotorcycle,
+  onPressBuilder,
   onToggleLike,
   onToggleSave,
   onShare,
@@ -45,7 +47,7 @@ export function FeedPost({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.builderInfo}>
+        <Pressable style={styles.builderInfo} onPress={onPressBuilder}>
           <AppAvatar uri={post.avatarUrl} size="md" />
 
           <View style={styles.builderText}>
@@ -56,7 +58,7 @@ export function FeedPost({
               {post.location}
             </AppText>
           </View>
-        </View>
+        </Pressable>
 
         <Pressable hitSlop={12}>
           <MoreHorizontal size={22} color={theme.textPrimary} />
@@ -140,7 +142,9 @@ export function FeedPost({
           </View>
 
           <AppText style={styles.caption} numberOfLines={2}>
-            <AppText variant="bodyMedium">{post.builderName} </AppText>
+            <AppText variant="bodyMedium" onPress={onPressBuilder}>
+              {post.builderName}{" "}
+            </AppText>
             <AppText tone="secondary">{post.caption}</AppText>
           </AppText>
 

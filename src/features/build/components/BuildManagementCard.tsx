@@ -22,7 +22,7 @@ export function BuildManagementCard({
           tone="secondary"
           style={styles.dangerZoneDescription}
         >
-          Arsipkan motor jika sudah tidak digunakan lagi. Data tidak dihapus
+          Arsipkan Build jika sudah tidak digunakan lagi. Data tidak dihapus
           permanen.
         </AppText>
       </View>

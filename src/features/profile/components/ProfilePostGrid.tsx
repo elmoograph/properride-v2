@@ -8,9 +8,13 @@ import type { FeedPost } from "@/src/shared/types/app.types";
 
 type ProfilePostGridProps = {
   posts: FeedPost[];
+  canCreatePost?: boolean;
 };
 
-export function ProfilePostGrid({ posts }: ProfilePostGridProps) {
+export function ProfilePostGrid({
+  posts,
+  canCreatePost = true,
+}: ProfilePostGridProps) {
   if (posts.length === 0) {
     return (
       <View style={styles.emptyCard}>
@@ -21,17 +25,18 @@ export function ProfilePostGrid({ posts }: ProfilePostGridProps) {
         <AppText variant="bodyMedium">Belum ada post</AppText>
 
         <AppText variant="caption" tone="secondary" style={styles.emptyText}>
-          Bagikan foto build, detail modifikasi, atau inspirasi motor pertama
-          kamu ke Feed.
+          {canCreatePost
+            ? "Bagikan foto build, detail modifikasi, atau inspirasi motor pertama kamu ke Feed."
+            : "Builder ini belum membagikan post publik."}
         </AppText>
 
-        <AppButton
+        {canCreatePost ? <AppButton
           variant="secondary"
           style={styles.emptyButton}
           onPress={() => router.push("/create-post")}
         >
           Buat Post
-        </AppButton>
+        </AppButton> : null}
       </View>
     );
   }

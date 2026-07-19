@@ -25,6 +25,10 @@ import {
   type PostInteractionState,
 } from "@/src/features/feed/repositories/postInteraction.repository";
 import type { FeedPost as FeedPostType } from "@/src/shared/types/app.types";
+import {
+  openBuilderProfile,
+  openMotorcycleBuild,
+} from "@/src/shared/navigation/builderNavigation";
 
 type FeedInteractionMap = Record<string, PostInteractionState>;
 
@@ -301,9 +305,20 @@ export function FeedScreen() {
                 onToggleSave={() => handleToggleSave(post)}
                 onShare={() => handleSharePost(post)}
                 onPress={() => router.push(`/post/${post.id}`)}
+                onPressBuilder={() =>
+                  openBuilderProfile({
+                    currentUserId: user?.id,
+                    builderUserId: post.userId,
+                  })
+                }
                 onPressMotorcycle={() => {
                   if (post.relatedMotorcycleId) {
-                    router.push(`/motorcycle/${post.relatedMotorcycleId}`);
+                    openMotorcycleBuild({
+                      currentUserId: user?.id,
+                      ownerUserId: post.userId,
+                      motorcycleId: post.relatedMotorcycleId,
+                      archivedAt: post.relatedMotorcycleArchivedAt,
+                    });
                   }
                 }}
               />

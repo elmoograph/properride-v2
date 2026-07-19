@@ -1,4 +1,3 @@
-import { router } from "expo-router";
 import { MapPin } from "lucide-react-native";
 import { Pressable, StyleSheet, View } from "react-native";
 
@@ -13,6 +12,7 @@ type BuildInfoSectionProps = {
   motorcycleEngineInfo: string;
   partsCount: number;
   galleryCount: number;
+  onPressBuilderProfile: () => void;
 };
 
 export function BuildInfoSection({
@@ -23,20 +23,25 @@ export function BuildInfoSection({
   motorcycleEngineInfo,
   partsCount,
   galleryCount,
+  onPressBuilderProfile,
 }: BuildInfoSectionProps) {
+  const builderNameText = (
+    <AppText variant="bodyMedium" tone="accent" numberOfLines={1}>
+      {builderName}
+    </AppText>
+  );
+
   return (
     <View style={styles.buildInfoSection}>
       <Pressable
-        onPress={() => router.push("/(tabs)/profile")}
-        style={({ pressed }) => [
-          styles.builderNameButton,
-          pressed && styles.pressed,
-        ]}
-      >
-        <AppText variant="bodyMedium" tone="accent" numberOfLines={1}>
-          {builderName}
-        </AppText>
-      </Pressable>
+          onPress={onPressBuilderProfile}
+          style={({ pressed }) => [
+            styles.builderNameButton,
+            pressed && styles.pressed,
+          ]}
+        >
+          {builderNameText}
+        </Pressable>
 
       <View style={styles.motorcycleTitleBlock}>
         <View style={styles.motorcycleMetaRow}>

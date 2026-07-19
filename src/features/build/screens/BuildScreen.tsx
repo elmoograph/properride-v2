@@ -1,6 +1,6 @@
-import { router, useFocusEffect } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Bike } from "lucide-react-native";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
@@ -12,11 +12,21 @@ import type { MotorcycleRow } from "@/src/shared/types/database.types";
 
 export function BuildScreen() {
   const { user } = useAuth();
+  const { motorcycleId } = useLocalSearchParams<{ motorcycleId?: string }>();
 
   const [motorcycles, setMotorcycles] = useState<MotorcycleRow[]>([]);
   const [selectedMotorcycleId, setSelectedMotorcycleId] = useState<string | null>(
     null,
   );
+
+  useEffect(() => {
+    if (
+      motorcycleId &&
+      motorcycles.some((motorcycle) => motorcycle.id === motorcycleId)
+    ) {
+      setSelectedMotorcycleId(motorcycleId);
+    }
+  }, [motorcycleId, motorcycles]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 

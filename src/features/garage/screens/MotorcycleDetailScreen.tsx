@@ -38,6 +38,8 @@ import {
   listPartsByMotorcycleId,
   listTimelineItemsByMotorcycleId,
 } from "@/src/features/garage/repositories/motorcyclePart.repository";
+import { useAuth } from "@/src/features/auth/hooks/useAuth";
+import { openBuilderProfile } from "@/src/shared/navigation/builderNavigation";
 
 type DetailTab = "setup" | "timeline" | "gallery";
 
@@ -75,6 +77,7 @@ export function MotorcycleDetailScreen({
   showBackButton = true,
   backFallbackHref = "/(tabs)/garage",
 }: MotorcycleDetailScreenProps = {}) {
+  const { user } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const resolvedMotorcycleId = motorcycleId ?? id;
   const [activeTab, setActiveTab] = useState<DetailTab>("setup");
@@ -113,6 +116,13 @@ export function MotorcycleDetailScreen({
             throw new Error("Motor tidak ditemukan.");
           }
 
+          if (
+            motorcycleData.archived_at &&
+            user?.id !== motorcycleData.user_id
+          ) {
+            throw new Error("Build ini sudah tidak tersedia.");
+          }
+
           const [partsData, timelineData, galleryData, profileData] =
             await Promise.all([
               listPartsByMotorcycleId(resolvedMotorcycleId),
@@ -149,7 +159,7 @@ export function MotorcycleDetailScreen({
       return () => {
         isActive = false;
       };
-    }, [resolvedMotorcycleId]),
+    }, [resolvedMotorcycleId, user?.id]),
   );
 
   if (loading) {
@@ -194,6 +204,7 @@ export function MotorcycleDetailScreen({
     builderProfile?.username ?? builderProfile?.full_name ?? "ProperRide Rider";
 
   const builderLocation = builderProfile?.location ?? "Lokasi belum diisi";
+  const isArchived = Boolean(motorcycle.archived_at);
 
   return (
     <AppScreen scrollable padded={false}>
@@ -228,11 +239,27 @@ export function MotorcycleDetailScreen({
 
       <View style={styles.content}>
         <View style={styles.detailInfoSection}>
-          <View style={styles.builderNameText}>
+          {isArchived ? (
+            <View style={styles.archivedBadge}>
+              <AppText variant="caption" tone="secondary">
+                Diarsipkan · Mode hanya-baca
+              </AppText>
+            </View>
+          ) : null}
+
+          <Pressable
+            style={styles.builderNameText}
+            onPress={() =>
+              openBuilderProfile({
+                currentUserId: user?.id,
+                builderUserId: motorcycle.user_id,
+              })
+            }
+          >
             <AppText variant="bodyMedium" tone="accent" numberOfLines={1}>
               {builderName}
             </AppText>
-          </View>
+          </Pressable>
 
           <View style={styles.motorcycleTitleBlock}>
             <View style={styles.motorcycleMetaRow}>
@@ -806,6 +833,16 @@ const styles = StyleSheet.create({
   },
   detailInfoSection: {
     gap: 0,
+  },
+  archivedBadge: {
+    alignSelf: "flex-start",
+    borderRadius: radius.pill,
+    backgroundColor: theme.surfaceSoft,
+    borderWidth: 1,
+    borderColor: theme.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.md,
   },
   builderNameText: {
     alignSelf: "flex-start",

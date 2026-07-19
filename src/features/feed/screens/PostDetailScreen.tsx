@@ -40,6 +40,10 @@ import type { FeedPost } from "@/src/shared/types/app.types";
 import type { MotorcycleRow } from "@/src/shared/types/database.types";
 import { radius, spacing, theme } from "@/src/shared/theme";
 import { PostMediaCarousel } from "@/src/features/feed/components/PostMediaCarousel";
+import {
+  openBuilderProfile,
+  openMotorcycleBuild,
+} from "@/src/shared/navigation/builderNavigation";
 
 export function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -324,7 +328,15 @@ export function PostDetailScreen() {
       <View style={styles.content}>
         <View style={styles.postInfo}>
           <View style={styles.authorRow}>
-            <View style={styles.authorLeft}>
+            <Pressable
+              style={styles.authorLeft}
+              onPress={() =>
+                openBuilderProfile({
+                  currentUserId: user?.id,
+                  builderUserId: post.userId,
+                })
+              }
+            >
               <AppAvatar uri={post.avatarUrl} size="lg" />
 
               <View style={styles.authorText}>
@@ -335,7 +347,7 @@ export function PostDetailScreen() {
                   {post.location} · {post.createdAt}
                 </AppText>
               </View>
-            </View>
+            </Pressable>
 
             {relatedMotorcycle ? (
               <Pressable
@@ -344,7 +356,12 @@ export function PostDetailScreen() {
                   pressed && styles.pressed,
                 ]}
                 onPress={() =>
-                  router.push(`/motorcycle/${relatedMotorcycle.id}`)
+                  openMotorcycleBuild({
+                    currentUserId: user?.id,
+                    ownerUserId: post.userId,
+                    motorcycleId: relatedMotorcycle.id,
+                    archivedAt: relatedMotorcycle.archived_at,
+                  })
                 }
               >
                 <Bike size={14} color={theme.primary} />
@@ -462,7 +479,16 @@ export function PostDetailScreen() {
 
                   <View style={styles.commentContent}>
                     <View style={styles.commentMeta}>
-                      <AppText variant="bodyMedium" numberOfLines={1}>
+                      <AppText
+                        variant="bodyMedium"
+                        numberOfLines={1}
+                        onPress={() =>
+                          openBuilderProfile({
+                            currentUserId: user?.id,
+                            builderUserId: comment.user_id,
+                          })
+                        }
+                      >
                         {comment.author.username}
                       </AppText>
 

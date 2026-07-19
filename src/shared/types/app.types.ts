@@ -27,6 +27,7 @@ export type FeedPost = {
   commentsCount: number;
   relatedMotorcycleName: string;
   relatedMotorcycleId?: string;
+  relatedMotorcycleArchivedAt?: string | null;
   category: MotorcycleType;
   visibility?: "public" | "private";
   status?: "published" | "archived" | "deleted";

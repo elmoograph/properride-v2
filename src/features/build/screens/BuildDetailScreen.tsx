@@ -40,6 +40,7 @@ import type {
   ProfileRow,
 } from "@/src/shared/types/database.types";
 import { listGalleryItemsByMotorcycleId } from "@/src/features/garage/repositories/motorcycleGallery.repository";
+import { openBuilderProfile } from "@/src/shared/navigation/builderNavigation";
 import {
   archiveMotorcyclePartById,
   createPartArchivedTimelineItem,
@@ -114,6 +115,13 @@ export function BuildDetailScreen({
             throw new Error("Motor tidak ditemukan.");
           }
 
+          if (
+            motorcycleData.archived_at &&
+            user?.id !== motorcycleData.user_id
+          ) {
+            throw new Error("Build ini sudah tidak tersedia.");
+          }
+
           const [partsData, timelineData, galleryData, profileData] =
             await Promise.all([
               listPartsByMotorcycleId(resolvedMotorcycleId),
@@ -150,7 +158,7 @@ export function BuildDetailScreen({
       return () => {
         isActive = false;
       };
-    }, [resolvedMotorcycleId]),
+    }, [resolvedMotorcycleId, user?.id]),
   );
 
   if (loading) {
@@ -196,6 +204,8 @@ export function BuildDetailScreen({
 
   const builderLocation = builderProfile?.location ?? "Lokasi belum diisi";
   const isOwner = user?.id === motorcycle.user_id;
+  const isArchived = Boolean(motorcycle.archived_at);
+  const canManage = isOwner && !isArchived;
 
   async function handleArchivePart(part: MotorcyclePartRow) {
     if (!motorcycle) {
@@ -255,7 +265,7 @@ export function BuildDetailScreen({
     }
 
     Alert.alert(
-      "Hapus motor dari Build?",
+      "Arsipkan Build?",
       "Motor akan diarsipkan dari Build aktif. Data part, gallery, timeline, dan post terkait tidak dihapus permanen.",
       [
         {
@@ -263,7 +273,7 @@ export function BuildDetailScreen({
           style: "cancel",
         },
         {
-          text: "Hapus Motor",
+          text: "Arsipkan Build",
           style: "destructive",
           onPress: async () => {
             try {
@@ -274,8 +284,8 @@ export function BuildDetailScreen({
               onMotorcycleRemoved?.(motorcycle.id);
 
               Alert.alert(
-                "Motor dihapus dari Build",
-                "Motor berhasil diarsipkan dari Build aktif.",
+                "Build diarsipkan",
+                "Build berhasil dipindahkan dari daftar Build aktif.",
                 [
                   {
                     text: "OK",
@@ -291,9 +301,9 @@ export function BuildDetailScreen({
               const message =
                 error instanceof Error
                   ? error.message
-                  : "Terjadi kesalahan saat menghapus motor dari Build.";
+                  : "Terjadi kesalahan saat mengarsipkan Build.";
 
-              Alert.alert("Gagal menghapus motor", message);
+              Alert.alert("Gagal mengarsipkan Build", message);
             } finally {
               setRemovingMotorcycle(false);
             }
@@ -310,11 +320,18 @@ export function BuildDetailScreen({
           imageUrl={motorcycleImageUrl}
           motorcycleId={motorcycle.id}
           showBackButton={showBackButton}
-          canEdit={isOwner}
+          canEdit={canManage}
         />
       </View>
 
       <View style={styles.content}>
+        {isArchived ? (
+          <View style={styles.archivedBadge}>
+            <AppText variant="caption" tone="secondary">
+              Diarsipkan · Mode hanya-baca
+            </AppText>
+          </View>
+        ) : null}
         {buildOptions.length > 1 && resolvedMotorcycleId ? (
           <View style={styles.buildSelector}>
             <AppSelect
@@ -340,6 +357,12 @@ export function BuildDetailScreen({
           motorcycleEngineInfo={motorcycleEngineInfo}
           partsCount={parts.length}
           galleryCount={galleryItems.length}
+          onPressBuilderProfile={() =>
+            openBuilderProfile({
+              currentUserId: user?.id,
+              builderUserId: motorcycle.user_id,
+            })
+          }
         />
         <BuildDetailTabs activeTab={activeTab} onChangeTab={setActiveTab} />
 
@@ -350,7 +373,7 @@ export function BuildDetailScreen({
               parts={parts}
               archivingPartId={archivingPartId}
               onArchivePart={handleArchivePart}
-              canManage={isOwner}
+              canManage={canManage}
             />
           ) : null}
 
@@ -362,11 +385,11 @@ export function BuildDetailScreen({
             <BuildGalleryTab
               gallery={galleryItems}
               motorcycleId={motorcycle.id}
-              canManage={isOwner}
+              canManage={canManage}
             />
           ) : null}
         </View>
-        {isOwner ? (
+        {canManage ? (
           <BuildManagementCard
             removingMotorcycle={removingMotorcycle}
             onRemoveMotorcycle={handleArchiveMotorcycle}
@@ -393,6 +416,16 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.section,
   },
   buildSelector: {
+    marginBottom: spacing.lg,
+  },
+  archivedBadge: {
+    alignSelf: "flex-start",
+    borderRadius: radius.pill,
+    backgroundColor: theme.surfaceSoft,
+    borderWidth: 1,
+    borderColor: theme.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
     marginBottom: spacing.lg,
   },
   tabContent: {
