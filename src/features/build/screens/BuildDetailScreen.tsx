@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -8,7 +8,13 @@ import {
   View,
 } from "react-native";
 
-import { AppButton, AppScreen, AppText } from "@/src/shared/components";
+import {
+  AppButton,
+  AppScreen,
+  AppSelect,
+  AppText,
+  type SelectOption,
+} from "@/src/shared/components";
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { BuildGalleryTab } from "@/src/features/build/components/BuildGalleryTab";
 import { BuildHero } from "@/src/features/build/components/BuildHero";
@@ -49,6 +55,8 @@ type BuildDetailScreenProps = {
   showBackButton?: boolean;
   backFallbackHref?: string;
   onMotorcycleRemoved?: (motorcycleId: string) => void;
+  buildOptions?: SelectOption[];
+  onChangeMotorcycle?: (motorcycleId: string) => void;
 };
 
 export function BuildDetailScreen({
@@ -56,6 +64,8 @@ export function BuildDetailScreen({
   showBackButton = true,
   backFallbackHref = "/(tabs)/garage",
   onMotorcycleRemoved,
+  buildOptions = [],
+  onChangeMotorcycle,
 }: BuildDetailScreenProps = {}) {
   const { user } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -76,6 +86,12 @@ export function BuildDetailScreen({
   );
   const [archivingPartId, setArchivingPartId] = useState<string | null>(null);
   const [removingMotorcycle, setRemovingMotorcycle] = useState(false);
+  const [buildSelectorVisible, setBuildSelectorVisible] = useState(false);
+
+  useEffect(() => {
+    setActiveTab("setup");
+    setBuildSelectorVisible(false);
+  }, [resolvedMotorcycleId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -299,6 +315,23 @@ export function BuildDetailScreen({
       </View>
 
       <View style={styles.content}>
+        {buildOptions.length > 1 && resolvedMotorcycleId ? (
+          <View style={styles.buildSelector}>
+            <AppSelect
+              label="Pilih Build"
+              placeholder="Pilih motor"
+              value={resolvedMotorcycleId}
+              options={buildOptions}
+              visible={buildSelectorVisible}
+              onOpen={() => setBuildSelectorVisible(true)}
+              onClose={() => setBuildSelectorVisible(false)}
+              onChange={(nextMotorcycleId) => {
+                onChangeMotorcycle?.(nextMotorcycleId);
+              }}
+            />
+          </View>
+        ) : null}
+
         <BuildInfoSection
           builderName={builderName}
           builderLocation={builderLocation}
@@ -358,6 +391,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xl,
     paddingBottom: spacing.section,
+  },
+  buildSelector: {
+    marginBottom: spacing.lg,
   },
   tabContent: {
     marginTop: spacing.xl,

@@ -14,6 +14,9 @@ export function BuildScreen() {
   const { user } = useAuth();
 
   const [motorcycles, setMotorcycles] = useState<MotorcycleRow[]>([]);
+  const [selectedMotorcycleId, setSelectedMotorcycleId] = useState<string | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -36,6 +39,11 @@ export function BuildScreen() {
 
           if (isActive) {
             setMotorcycles(data);
+            setSelectedMotorcycleId((current) =>
+              current && data.some((motorcycle) => motorcycle.id === current)
+                ? current
+                : (data[0]?.id ?? null),
+            );
           }
         } catch (error) {
           const message =
@@ -106,20 +114,31 @@ export function BuildScreen() {
     );
   }
 
-  const featuredBuild = motorcycles[0] ?? null;
+  const selectedBuild =
+    motorcycles.find((motorcycle) => motorcycle.id === selectedMotorcycleId) ??
+    motorcycles[0] ??
+    null;
 
-  if (featuredBuild) {
+  if (selectedBuild) {
     return (
       <BuildDetailScreen
-        motorcycleId={featuredBuild.id}
+        motorcycleId={selectedBuild.id}
         showBackButton={false}
         backFallbackHref="/(tabs)/garage"
+        buildOptions={motorcycles.map((motorcycle) => ({
+          label: motorcycle.name?.trim()
+            ? `${motorcycle.name.trim()} · ${motorcycle.brand} ${motorcycle.model} · ${motorcycle.year}`
+            : `${motorcycle.brand} ${motorcycle.model} · ${motorcycle.year}`,
+          value: motorcycle.id,
+        }))}
+        onChangeMotorcycle={setSelectedMotorcycleId}
         onMotorcycleRemoved={(removedMotorcycleId) => {
-          setMotorcycles((current) =>
-            current.filter(
-              (motorcycle) => motorcycle.id !== removedMotorcycleId,
-            ),
+          const nextMotorcycles = motorcycles.filter(
+            (motorcycle) => motorcycle.id !== removedMotorcycleId,
           );
+
+          setMotorcycles(nextMotorcycles);
+          setSelectedMotorcycleId(nextMotorcycles[0]?.id ?? null);
         }}
       />
     );
