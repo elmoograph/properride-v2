@@ -22,6 +22,7 @@ type BuildSetupPartsTabProps = {
   parts: MotorcyclePartRow[];
   archivingPartId: string | null;
   onArchivePart: (part: MotorcyclePartRow) => void;
+  canManage: boolean;
 };
 
 export function BuildSetupPartsTab({
@@ -29,6 +30,7 @@ export function BuildSetupPartsTab({
   parts,
   archivingPartId,
   onArchivePart,
+  canManage,
 }: BuildSetupPartsTabProps) {
   const groupedParts = useMemo(() => groupPartsByCategory(parts), [parts]);
 
@@ -71,19 +73,21 @@ export function BuildSetupPartsTab({
           </AppText>
         </View>
 
-        <Pressable
-          onPress={() =>
-            router.push(`/(create)/add-part?motorcycleId=${motorcycleId}`)
-          }
-          style={({ pressed }) => [
-            styles.sectionActionButton,
-            pressed && styles.pressed,
-          ]}
-        >
-          <AppText variant="caption" tone="accent">
-            Add Part
-          </AppText>
-        </Pressable>
+        {canManage ? (
+          <Pressable
+            onPress={() =>
+              router.push(`/(create)/add-part?motorcycleId=${motorcycleId}`)
+            }
+            style={({ pressed }) => [
+              styles.sectionActionButton,
+              pressed && styles.pressed,
+            ]}
+          >
+            <AppText variant="caption" tone="accent">
+              Add Part
+            </AppText>
+          </Pressable>
+        ) : null}
       </View>
 
       {groupedParts.length === 0 ? (
@@ -131,6 +135,7 @@ export function BuildSetupPartsTab({
                     {group.parts.map((part) => (
                       <View key={part.id} style={styles.partRow}>
                         <Pressable
+                          disabled={!canManage}
                           onPress={() => router.push(`/part/edit/${part.id}`)}
                           style={({ pressed }) => [
                             styles.partMainAction,
@@ -167,25 +172,27 @@ export function BuildSetupPartsTab({
                           </View>
                         </Pressable>
 
-                        <Pressable
-                          disabled={archivingPartId === part.id}
-                          onPress={() => onArchivePart(part)}
-                          style={({ pressed }) => [
-                            styles.archivePartButton,
-                            pressed && styles.pressed,
-                            archivingPartId === part.id &&
-                              styles.disabledButton,
-                          ]}
-                        >
-                          {archivingPartId === part.id ? (
-                            <ActivityIndicator
-                              size="small"
-                              color={theme.primary}
-                            />
-                          ) : (
-                            <Archive size={16} color={theme.primary} />
-                          )}
-                        </Pressable>
+                        {canManage ? (
+                          <Pressable
+                            disabled={archivingPartId === part.id}
+                            onPress={() => onArchivePart(part)}
+                            style={({ pressed }) => [
+                              styles.archivePartButton,
+                              pressed && styles.pressed,
+                              archivingPartId === part.id &&
+                                styles.disabledButton,
+                            ]}
+                          >
+                            {archivingPartId === part.id ? (
+                              <ActivityIndicator
+                                size="small"
+                                color={theme.primary}
+                              />
+                            ) : (
+                              <Archive size={16} color={theme.primary} />
+                            )}
+                          </Pressable>
+                        ) : null}
                       </View>
                     ))}
                   </View>

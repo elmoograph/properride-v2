@@ -9,12 +9,14 @@ type BuildHeroProps = {
   imageUrl: string | null;
   motorcycleId: string;
   showBackButton: boolean;
+  canEdit: boolean;
 };
 
 export function BuildHero({
   imageUrl,
   motorcycleId,
   showBackButton,
+  canEdit,
 }: BuildHeroProps) {
   return (
     <View style={styles.heroWrap}>
@@ -43,12 +45,16 @@ export function BuildHero({
           <View />
         )}
 
-        <Pressable
-          style={styles.iconButton}
-          onPress={() => router.push(`/motorcycle/edit/${motorcycleId}`)}
-        >
-          <Edit3 size={18} color={theme.textPrimary} />
-        </Pressable>
+        {canEdit ? (
+          <Pressable
+            style={styles.iconButton}
+            onPress={() => router.push(`/motorcycle/edit/${motorcycleId}`)}
+          >
+            <Edit3 size={18} color={theme.textPrimary} />
+          </Pressable>
+        ) : (
+          <View />
+        )}
       </View>
     </View>
   );

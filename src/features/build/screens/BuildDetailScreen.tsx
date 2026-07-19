@@ -9,6 +9,7 @@ import {
 } from "react-native";
 
 import { AppButton, AppScreen, AppText } from "@/src/shared/components";
+import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { BuildGalleryTab } from "@/src/features/build/components/BuildGalleryTab";
 import { BuildHero } from "@/src/features/build/components/BuildHero";
 import { BuildInfoSection } from "@/src/features/build/components/BuildInfoSection";
@@ -56,6 +57,7 @@ export function BuildDetailScreen({
   backFallbackHref = "/(tabs)/garage",
   onMotorcycleRemoved,
 }: BuildDetailScreenProps = {}) {
+  const { user } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const resolvedMotorcycleId = motorcycleId ?? id;
   const [activeTab, setActiveTab] = useState<BuildDetailTab>("setup");
@@ -177,6 +179,7 @@ export function BuildDetailScreen({
     builderProfile?.username ?? builderProfile?.full_name ?? "ProperRide Rider";
 
   const builderLocation = builderProfile?.location ?? "Lokasi belum diisi";
+  const isOwner = user?.id === motorcycle.user_id;
 
   async function handleArchivePart(part: MotorcyclePartRow) {
     if (!motorcycle) {
@@ -291,6 +294,7 @@ export function BuildDetailScreen({
           imageUrl={motorcycleImageUrl}
           motorcycleId={motorcycle.id}
           showBackButton={showBackButton}
+          canEdit={isOwner}
         />
       </View>
 
@@ -313,6 +317,7 @@ export function BuildDetailScreen({
               parts={parts}
               archivingPartId={archivingPartId}
               onArchivePart={handleArchivePart}
+              canManage={isOwner}
             />
           ) : null}
 
@@ -324,13 +329,16 @@ export function BuildDetailScreen({
             <BuildGalleryTab
               gallery={galleryItems}
               motorcycleId={motorcycle.id}
+              canManage={isOwner}
             />
           ) : null}
         </View>
-        <BuildManagementCard
-          removingMotorcycle={removingMotorcycle}
-          onRemoveMotorcycle={handleArchiveMotorcycle}
-        />
+        {isOwner ? (
+          <BuildManagementCard
+            removingMotorcycle={removingMotorcycle}
+            onRemoveMotorcycle={handleArchiveMotorcycle}
+          />
+        ) : null}
       </View>
     </AppScreen>
   );

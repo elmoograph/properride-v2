@@ -9,11 +9,13 @@ import type { MotorcycleGalleryItemRow } from "@/src/shared/types/database.types
 type BuildGalleryTabProps = {
   gallery: MotorcycleGalleryItemRow[];
   motorcycleId: string;
+  canManage: boolean;
 };
 
 export function BuildGalleryTab({
   gallery,
   motorcycleId,
+  canManage,
 }: BuildGalleryTabProps) {
   return (
     <View>
@@ -29,19 +31,21 @@ export function BuildGalleryTab({
           </AppText>
         </View>
 
-        <Pressable
-          onPress={() =>
-            router.push(`/(create)/add-gallery?motorcycleId=${motorcycleId}`)
-          }
-          style={({ pressed }) => [
-            styles.sectionActionButton,
-            pressed && styles.pressed,
-          ]}
-        >
-          <AppText variant="caption" tone="accent">
-            Add Gallery
-          </AppText>
-        </Pressable>
+        {canManage ? (
+          <Pressable
+            onPress={() =>
+              router.push(`/(create)/add-gallery?motorcycleId=${motorcycleId}`)
+            }
+            style={({ pressed }) => [
+              styles.sectionActionButton,
+              pressed && styles.pressed,
+            ]}
+          >
+            <AppText variant="caption" tone="accent">
+              Add Gallery
+            </AppText>
+          </Pressable>
+        ) : null}
       </View>
 
       {gallery.length === 0 ? (
