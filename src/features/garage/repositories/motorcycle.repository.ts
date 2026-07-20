@@ -46,6 +46,21 @@ export async function listMotorcyclesByUserId(userId: string) {
   return data;
 }
 
+export async function listArchivedMotorcyclesByUserId(userId: string) {
+  const { data, error } = await supabase
+    .from("motorcycles")
+    .select("*")
+    .eq("user_id", userId)
+    .not("archived_at", "is", null)
+    .order("archived_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
 export async function getMotorcycleById(id: string) {
   const { data, error } = await supabase
     .from("motorcycles")
@@ -119,5 +134,13 @@ export async function archiveMotorcycleById(
 ): Promise<MotorcycleRow> {
   return updateMotorcycleById(motorcycleId, {
     archived_at: new Date().toISOString(),
+  });
+}
+
+export async function restoreMotorcycleById(
+  motorcycleId: string,
+): Promise<MotorcycleRow> {
+  return updateMotorcycleById(motorcycleId, {
+    archived_at: null,
   });
 }

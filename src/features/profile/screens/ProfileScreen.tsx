@@ -1,5 +1,6 @@
 import {
   Activity,
+  Archive,
   Bookmark,
   CircleHelp,
   LogOut,
@@ -215,6 +216,13 @@ export function ProfileScreen() {
               title="Aktivitas"
               description="Like, simpan, dan komentar kamu."
               onPress={() => router.push("/activity")}
+            />
+
+            <ProfileMenuItem
+              icon={<Archive size={18} color={theme.primary} />}
+              title="Archived Builds"
+              description="Build yang kamu arsipkan dari daftar aktif."
+              onPress={() => router.push("/archived-builds")}
             />
           </View>
         </View>
