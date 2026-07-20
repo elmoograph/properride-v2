@@ -1,9 +1,6 @@
 import { useAuth } from "@/src/features/auth/hooks/useAuth";
 import { getMotorcycleById } from "@/src/features/garage/repositories/motorcycle.repository";
-import {
-  createMotorcyclePart,
-  createPartAddedTimelineItem,
-} from "@/src/features/garage/repositories/motorcyclePart.repository";
+import { createMotorcyclePartWithTimeline } from "@/src/features/garage/repositories/motorcyclePart.repository";
 import { router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
@@ -156,20 +153,13 @@ export function AddPartScreen() {
     try {
       setSubmitting(true);
 
-      await createMotorcyclePart({
+      await createMotorcyclePartWithTimeline({
         motorcycleId: motorcycle.id,
-        userId: user.id,
         category,
         brand: finalBrand,
         name: cleanPartName,
         description: cleanDescription || null,
-      });
-
-      await createPartAddedTimelineItem({
-        motorcycleId: motorcycle.id,
-        userId: user.id,
-        title: cleanPartName,
-        description: cleanDescription
+        timelineDescription: cleanDescription
           ? `${finalBrand} ditambahkan. ${cleanDescription}`
           : `${finalBrand} ditambahkan ke setup ${motorcycle.brand} ${motorcycle.model}.`,
       });
@@ -180,7 +170,11 @@ export function AddPartScreen() {
         [
           {
             text: "OK",
-            onPress: () => router.replace(`/motorcycle/${motorcycle.id}`),
+            onPress: () =>
+              router.replace({
+                pathname: "/(tabs)/garage",
+                params: { motorcycleId: motorcycle.id },
+              }),
           },
         ],
       );

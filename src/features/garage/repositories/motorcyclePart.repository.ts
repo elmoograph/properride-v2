@@ -6,11 +6,11 @@ import type {
 
 export type CreateMotorcyclePartPayload = {
   motorcycleId: string;
-  userId: string;
   category: string;
   brand: string;
   name: string;
   description?: string | null;
+  timelineDescription: string;
 };
 
 export type UpdateMotorcyclePartPayload = Partial<{
@@ -37,26 +37,25 @@ export async function listPartsByMotorcycleId(
   return data;
 }
 
-export async function createMotorcyclePart({
+export async function createMotorcyclePartWithTimeline({
   motorcycleId,
-  userId,
   category,
   brand,
   name,
   description = null,
+  timelineDescription,
 }: CreateMotorcyclePartPayload): Promise<MotorcyclePartRow> {
-  const { data, error } = await supabase
-    .from("motorcycle_parts")
-    .insert({
-      motorcycle_id: motorcycleId,
-      user_id: userId,
-      category,
-      brand,
-      name,
-      description,
-    })
-    .select("*")
-    .single();
+  const { data, error } = await supabase.rpc(
+    "create_motorcycle_part_with_timeline",
+    {
+      p_motorcycle_id: motorcycleId,
+      p_category: category,
+      p_brand: brand,
+      p_name: name,
+      p_description: description,
+      p_timeline_description: timelineDescription,
+    },
+  );
 
   if (error) {
     throw error;
@@ -65,25 +64,21 @@ export async function createMotorcyclePart({
   return data;
 }
 
-export async function archiveMotorcyclePartById(partId: string): Promise<void> {
-  const { error } = await supabase
-    .from("motorcycle_parts")
-    .update({
-      archived_at: new Date().toISOString(),
-    })
-    .eq("id", partId);
+export async function archiveMotorcyclePartWithTimeline(
+  partId: string,
+): Promise<MotorcyclePartRow> {
+  const { data, error } = await supabase.rpc(
+    "archive_motorcycle_part_with_timeline",
+    {
+      p_part_id: partId,
+    },
+  );
 
   if (error) {
     throw error;
   }
+  return data;
 }
-
-export type CreateMotorcycleTimelineItemPayload = {
-  motorcycleId: string;
-  userId: string;
-  title: string;
-  description: string;
-};
 
 export async function listTimelineItemsByMotorcycleId(
   motorcycleId: string,
@@ -93,56 +88,6 @@ export async function listTimelineItemsByMotorcycleId(
     .select("*")
     .eq("motorcycle_id", motorcycleId)
     .order("created_at", { ascending: false });
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
-}
-
-export async function createPartAddedTimelineItem({
-  motorcycleId,
-  userId,
-  title,
-  description,
-}: CreateMotorcycleTimelineItemPayload): Promise<MotorcycleTimelineItemRow> {
-  const { data, error } = await supabase
-    .from("motorcycle_timeline_items")
-    .insert({
-      motorcycle_id: motorcycleId,
-      user_id: userId,
-      action: "part_added",
-      title,
-      description,
-    })
-    .select("*")
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return data;
-}
-
-export async function createPartArchivedTimelineItem({
-  motorcycleId,
-  userId,
-  title,
-  description,
-}: CreateMotorcycleTimelineItemPayload): Promise<MotorcycleTimelineItemRow> {
-  const { data, error } = await supabase
-    .from("motorcycle_timeline_items")
-    .insert({
-      motorcycle_id: motorcycleId,
-      user_id: userId,
-      action: "part_removed",
-      title,
-      description,
-    })
-    .select("*")
-    .single();
 
   if (error) {
     throw error;

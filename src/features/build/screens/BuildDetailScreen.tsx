@@ -42,8 +42,7 @@ import type {
 import { listGalleryItemsByMotorcycleId } from "@/src/features/garage/repositories/motorcycleGallery.repository";
 import { openBuilderProfile } from "@/src/shared/navigation/builderNavigation";
 import {
-  archiveMotorcyclePartById,
-  createPartArchivedTimelineItem,
+  archiveMotorcyclePartWithTimeline,
   listPartsByMotorcycleId,
   listTimelineItemsByMotorcycleId,
 } from "@/src/features/garage/repositories/motorcyclePart.repository";
@@ -227,14 +226,7 @@ export function BuildDetailScreen({
             try {
               setArchivingPartId(part.id);
 
-              await archiveMotorcyclePartById(part.id);
-
-              await createPartArchivedTimelineItem({
-                motorcycleId: motorcycle.id,
-                userId: motorcycle.user_id,
-                title: part.name,
-                description: `${part.brand} diarsipkan dari setup aktif ${motorcycle.brand} ${motorcycle.model}.`,
-              });
+              await archiveMotorcyclePartWithTimeline(part.id);
 
               const [nextParts, nextTimelineItems] = await Promise.all([
                 listPartsByMotorcycleId(motorcycle.id),

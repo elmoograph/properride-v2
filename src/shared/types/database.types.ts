@@ -251,7 +251,15 @@ export type Database = {
           created_at?: string;
         };
         Update: Partial<Omit<PostMediaRow, "id" | "post_id" | "created_at">>;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "post_media_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "posts";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       post_likes: {
         Row: PostLikeRow;
@@ -288,11 +296,44 @@ export type Database = {
         Update: Partial<
           Omit<CommentRow, "id" | "post_id" | "user_id" | "created_at">
         >;
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "comments_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "posts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "comments_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      create_motorcycle_part_with_timeline: {
+        Args: {
+          p_motorcycle_id: string;
+          p_category: string;
+          p_brand: string;
+          p_name: string;
+          p_description: string | null;
+          p_timeline_description: string;
+        };
+        Returns: MotorcyclePartRow;
+      };
+      archive_motorcycle_part_with_timeline: {
+        Args: {
+          p_part_id: string;
+        };
+        Returns: MotorcyclePartRow;
+      };
+    };
     Enums: {
       visibility: Visibility;
       motorcycle_status: MotorcycleStatus;
