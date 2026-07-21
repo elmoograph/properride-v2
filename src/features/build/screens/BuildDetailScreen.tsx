@@ -12,7 +12,6 @@ import {
   AppButton,
   AppCard,
   AppScreen,
-  AppSelect,
   AppText,
   type SelectOption,
 } from "@/src/shared/components";
@@ -22,7 +21,6 @@ import { BuildHero } from "@/src/features/build/components/BuildHero";
 import { BuildInfoSection } from "@/src/features/build/components/BuildInfoSection";
 import { BuildSetupPartsTab } from "@/src/features/build/components/BuildSetupPartsTab";
 import { BuildTimelineTab } from "@/src/features/build/components/BuildTimelineTab";
-import { BuildManagementCard } from "@/src/features/build/components/BuildManagementCard";
 import {
   BuildDetailTabs,
   type BuildDetailTab,
@@ -361,6 +359,8 @@ export function BuildDetailScreen({
           motorcycleId={motorcycle.id}
           showBackButton={showBackButton}
           canEdit={canManage}
+          archiving={removingMotorcycle}
+          onArchive={handleArchiveMotorcycle}
         />
       </View>
 
@@ -372,23 +372,6 @@ export function BuildDetailScreen({
             </AppText>
           </View>
         ) : null}
-        {buildOptions.length > 1 && resolvedMotorcycleId ? (
-          <View style={styles.buildSelector}>
-            <AppSelect
-              label="Pilih Build"
-              placeholder="Pilih motor"
-              value={resolvedMotorcycleId}
-              options={buildOptions}
-              visible={buildSelectorVisible}
-              onOpen={() => setBuildSelectorVisible(true)}
-              onClose={() => setBuildSelectorVisible(false)}
-              onChange={(nextMotorcycleId) => {
-                onChangeMotorcycle?.(nextMotorcycleId);
-              }}
-            />
-          </View>
-        ) : null}
-
         <BuildInfoSection
           builderName={builderName}
           builderLocation={builderLocation}
@@ -397,6 +380,12 @@ export function BuildDetailScreen({
           motorcycleEngineInfo={motorcycleEngineInfo}
           partsCount={parts.length}
           galleryCount={galleryItems.length}
+          buildOptions={buildOptions}
+          selectedMotorcycleId={resolvedMotorcycleId}
+          buildSelectorVisible={buildSelectorVisible}
+          onOpenBuildSelector={() => setBuildSelectorVisible(true)}
+          onCloseBuildSelector={() => setBuildSelectorVisible(false)}
+          onChangeMotorcycle={onChangeMotorcycle}
           onPressBuilderProfile={() =>
             openBuilderProfile({
               currentUserId: user?.id,
@@ -462,12 +451,6 @@ export function BuildDetailScreen({
             />
           ) : null}
         </View>
-        {canManage ? (
-          <BuildManagementCard
-            removingMotorcycle={removingMotorcycle}
-            onRemoveMotorcycle={handleArchiveMotorcycle}
-          />
-        ) : null}
       </View>
     </AppScreen>
   );
@@ -487,9 +470,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xl,
     paddingBottom: spacing.section,
-  },
-  buildSelector: {
-    marginBottom: spacing.lg,
   },
   archivedBadge: {
     alignSelf: "flex-start",

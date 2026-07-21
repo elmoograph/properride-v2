@@ -20,6 +20,8 @@ type AppSelectProps = {
   onChange: (value: string) => void;
   disabled?: boolean;
   helperText?: string;
+  compact?: boolean;
+  triggerLabel?: string;
 };
 
 export function AppSelect({
@@ -33,30 +35,39 @@ export function AppSelect({
   onChange,
   disabled = false,
   helperText,
+  compact = false,
+  triggerLabel,
 }: AppSelectProps) {
   const selectedOption = options.find((option) => option.value === value);
 
   return (
     <View style={styles.container}>
-      <AppText variant="caption" tone="secondary" style={styles.label}>
-        {label}
-      </AppText>
+      {!compact ? (
+        <AppText variant="caption" tone="secondary" style={styles.label}>
+          {label}
+        </AppText>
+      ) : null}
 
       <Pressable
         disabled={disabled}
         onPress={onOpen}
         style={({ pressed }) => [
           styles.trigger,
+          compact && styles.compactTrigger,
           disabled && styles.disabled,
           pressed && !disabled && styles.pressed,
         ]}
       >
-        <AppText tone={selectedOption ? "primary" : "muted"} numberOfLines={1}>
-          {selectedOption?.label ?? placeholder}
+        <AppText
+          variant={compact ? "caption" : "body"}
+          tone={selectedOption ? "primary" : "muted"}
+          numberOfLines={1}
+        >
+          {triggerLabel ?? selectedOption?.label ?? placeholder}
         </AppText>
 
         <ChevronDown
-          size={18}
+          size={compact ? 15 : 18}
           color={disabled ? theme.textMuted : theme.textPrimary}
         />
       </Pressable>
@@ -149,6 +160,14 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.5,
+  },
+  compactTrigger: {
+    minHeight: 34,
+    borderRadius: radius.pill,
+    backgroundColor: theme.primarySoft,
+    borderColor: theme.primary,
+    paddingHorizontal: spacing.sm,
+    gap: spacing.xs,
   },
   helper: {
     marginLeft: spacing.xs,

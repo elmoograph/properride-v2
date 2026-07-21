@@ -1,7 +1,11 @@
 import { MapPin } from "lucide-react-native";
 import { Pressable, StyleSheet, View } from "react-native";
 
-import { AppText } from "@/src/shared/components";
+import {
+  AppSelect,
+  AppText,
+  type SelectOption,
+} from "@/src/shared/components";
 import { radius, spacing, theme } from "@/src/shared/theme";
 
 type BuildInfoSectionProps = {
@@ -13,6 +17,12 @@ type BuildInfoSectionProps = {
   partsCount: number;
   galleryCount: number;
   onPressBuilderProfile: () => void;
+  buildOptions?: SelectOption[];
+  selectedMotorcycleId?: string;
+  buildSelectorVisible?: boolean;
+  onOpenBuildSelector?: () => void;
+  onCloseBuildSelector?: () => void;
+  onChangeMotorcycle?: (motorcycleId: string) => void;
 };
 
 export function BuildInfoSection({
@@ -24,6 +34,12 @@ export function BuildInfoSection({
   partsCount,
   galleryCount,
   onPressBuilderProfile,
+  buildOptions = [],
+  selectedMotorcycleId,
+  buildSelectorVisible = false,
+  onOpenBuildSelector,
+  onCloseBuildSelector,
+  onChangeMotorcycle,
 }: BuildInfoSectionProps) {
   const builderNameText = (
     <AppText variant="bodyMedium" tone="accent" numberOfLines={1}>
@@ -44,8 +60,12 @@ export function BuildInfoSection({
         </Pressable>
 
       <View style={styles.motorcycleTitleBlock}>
-        <View style={styles.motorcycleMetaRow}>
-          <AppText variant="titleLarge" style={styles.title} numberOfLines={1}>
+        <View style={styles.motorcycleTitleRow}>
+          <AppText
+            variant="titleLarge"
+            style={styles.title}
+            numberOfLines={1}
+          >
             {motorcycleTitle}
           </AppText>
 
@@ -54,6 +74,23 @@ export function BuildInfoSection({
               {motorcycleYear}
             </AppText>
           </View>
+
+          {buildOptions.length > 1 && selectedMotorcycleId ? (
+            <View style={styles.buildSelector}>
+              <AppSelect
+                compact
+                label="Pilih Build"
+                triggerLabel="Pilih Build"
+                placeholder="Pilih Build"
+                value={selectedMotorcycleId}
+                options={buildOptions}
+                visible={buildSelectorVisible}
+                onOpen={() => onOpenBuildSelector?.()}
+                onClose={() => onCloseBuildSelector?.()}
+                onChange={(value) => onChangeMotorcycle?.(value)}
+              />
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.motorcycleMetaRow}>
@@ -115,8 +152,17 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     flexWrap: "wrap",
   },
+  motorcycleTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
   title: {
     marginTop: spacing.xs,
+    flexShrink: 1,
+  },
+  buildSelector: {
+    marginLeft: "auto",
   },
   locationMeta: {
     flexDirection: "row",
@@ -126,11 +172,6 @@ const styles = StyleSheet.create({
   },
   yearPill: {
     minHeight: 26,
-    borderRadius: radius.pill,
-    backgroundColor: theme.primarySoft,
-    borderWidth: 1,
-    borderColor: theme.borderSoft,
-    paddingHorizontal: spacing.sm,
     alignItems: "center",
     justifyContent: "center",
   },
