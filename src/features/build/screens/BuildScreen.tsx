@@ -18,17 +18,20 @@ export function BuildScreen() {
   const [selectedMotorcycleId, setSelectedMotorcycleId] = useState<string | null>(
     null,
   );
-
-  useEffect(() => {
-    if (
-      motorcycleId &&
-      motorcycles.some((motorcycle) => motorcycle.id === motorcycleId)
-    ) {
-      setSelectedMotorcycleId(motorcycleId);
-    }
-  }, [motorcycleId, motorcycles]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!motorcycleId || loading || errorMessage) {
+      return;
+    }
+
+    if (motorcycles.some((motorcycle) => motorcycle.id === motorcycleId)) {
+      setSelectedMotorcycleId(motorcycleId);
+    }
+
+    router.setParams({ motorcycleId: undefined });
+  }, [errorMessage, loading, motorcycleId, motorcycles]);
 
   useFocusEffect(
     useCallback(() => {
