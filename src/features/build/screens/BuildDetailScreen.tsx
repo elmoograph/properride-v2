@@ -10,6 +10,7 @@ import {
 
 import {
   AppButton,
+  AppCard,
   AppScreen,
   AppSelect,
   AppText,
@@ -76,6 +77,11 @@ export function BuildDetailScreen({
   const [builderProfile, setBuilderProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [loadingBuildData, setLoadingBuildData] = useState(true);
+  const [partsError, setPartsError] = useState<string | null>(null);
+  const [timelineError, setTimelineError] = useState<string | null>(null);
+  const [galleryError, setGalleryError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [parts, setParts] = useState<MotorcyclePartRow[]>([]);
   const [timelineItems, setTimelineItems] = useState<
@@ -107,6 +113,15 @@ export function BuildDetailScreen({
         try {
           setLoading(true);
           setErrorMessage(null);
+          setLoadingBuildData(true);
+          setPartsError(null);
+          setTimelineError(null);
+          setGalleryError(null);
+          setMotorcycle(null);
+          setBuilderProfile(null);
+          setParts([]);
+          setTimelineItems([]);
+          setGalleryItems([]);
 
           const motorcycleData = await getMotorcycleById(resolvedMotorcycleId);
 
@@ -121,8 +136,13 @@ export function BuildDetailScreen({
             throw new Error("Build ini sudah tidak tersedia.");
           }
 
-          const [partsData, timelineData, galleryData, profileData] =
-            await Promise.all([
+          if (isActive) {
+            setMotorcycle(motorcycleData);
+            setLoading(false);
+          }
+
+          const [partsResult, timelineResult, galleryResult, profileResult] =
+            await Promise.allSettled([
               listPartsByMotorcycleId(resolvedMotorcycleId),
               listTimelineItemsByMotorcycleId(resolvedMotorcycleId),
               listGalleryItemsByMotorcycleId(resolvedMotorcycleId),
@@ -130,11 +150,33 @@ export function BuildDetailScreen({
             ]);
 
           if (isActive) {
-            setMotorcycle(motorcycleData);
-            setBuilderProfile(profileData);
-            setParts(partsData);
-            setTimelineItems(timelineData);
-            setGalleryItems(galleryData);
+            if (partsResult.status === "fulfilled") {
+              setParts(partsResult.value);
+            } else {
+              setPartsError(getLoadErrorMessage(partsResult.reason, "Setup"));
+            }
+
+            if (timelineResult.status === "fulfilled") {
+              setTimelineItems(timelineResult.value);
+            } else {
+              setTimelineError(
+                getLoadErrorMessage(timelineResult.reason, "Timeline"),
+              );
+            }
+
+            if (galleryResult.status === "fulfilled") {
+              setGalleryItems(galleryResult.value);
+            } else {
+              setGalleryError(
+                getLoadErrorMessage(galleryResult.reason, "Gallery"),
+              );
+            }
+
+            if (profileResult.status === "fulfilled") {
+              setBuilderProfile(profileResult.value);
+            }
+
+            setLoadingBuildData(false);
           }
         } catch (error) {
           const message =
@@ -148,6 +190,7 @@ export function BuildDetailScreen({
         } finally {
           if (isActive) {
             setLoading(false);
+            setLoadingBuildData(false);
           }
         }
       }
@@ -157,7 +200,7 @@ export function BuildDetailScreen({
       return () => {
         isActive = false;
       };
-    }, [resolvedMotorcycleId, user?.id]),
+    }, [reloadKey, resolvedMotorcycleId, user?.id]),
   );
 
   if (loading) {
@@ -205,6 +248,11 @@ export function BuildDetailScreen({
   const isOwner = user?.id === motorcycle.user_id;
   const isArchived = Boolean(motorcycle.archived_at);
   const canManage = isOwner && !isArchived;
+  const activeTabError = getActiveTabError(activeTab, {
+    setup: partsError,
+    timeline: timelineError,
+    gallery: galleryError,
+  });
 
   async function handleArchivePart(part: MotorcyclePartRow) {
     if (!motorcycle) {
@@ -359,7 +407,40 @@ export function BuildDetailScreen({
         <BuildDetailTabs activeTab={activeTab} onChangeTab={setActiveTab} />
 
         <View style={styles.tabContent}>
-          {activeTab === "setup" ? (
+          {loadingBuildData ? (
+            <View style={styles.tabState}>
+              <ActivityIndicator color={theme.primary} />
+              <AppText variant="caption" tone="secondary">
+                Memuat data Build...
+              </AppText>
+            </View>
+          ) : null}
+
+          {!loadingBuildData && activeTabError ? (
+            <AppCard style={styles.tabErrorCard}>
+              <AppText variant="bodyMedium">
+                {activeTab === "setup"
+                  ? "Setup belum bisa dimuat"
+                  : `${activeTab === "timeline" ? "Timeline" : "Gallery"} belum bisa dimuat`}
+              </AppText>
+              <AppText
+                variant="caption"
+                tone="secondary"
+                style={styles.tabErrorMessage}
+              >
+                {activeTabError}
+              </AppText>
+              <AppButton
+                variant="secondary"
+                style={styles.retryButton}
+                onPress={() => setReloadKey((current) => current + 1)}
+              >
+                Coba Lagi
+              </AppButton>
+            </AppCard>
+          ) : null}
+
+          {!loadingBuildData && !partsError && activeTab === "setup" ? (
             <BuildSetupPartsTab
               motorcycleId={motorcycle.id}
               parts={parts}
@@ -369,11 +450,11 @@ export function BuildDetailScreen({
             />
           ) : null}
 
-          {activeTab === "timeline" ? (
+          {!loadingBuildData && !timelineError && activeTab === "timeline" ? (
             <BuildTimelineTab timelineItems={timelineItems} />
           ) : null}
 
-          {activeTab === "gallery" ? (
+          {!loadingBuildData && !galleryError && activeTab === "gallery" ? (
             <BuildGalleryTab
               gallery={galleryItems}
               motorcycleId={motorcycle.id}
@@ -423,6 +504,21 @@ const styles = StyleSheet.create({
   tabContent: {
     marginTop: spacing.xl,
   },
+  tabState: {
+    minHeight: 180,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+  },
+  tabErrorCard: {
+    alignItems: "flex-start",
+  },
+  tabErrorMessage: {
+    marginTop: spacing.xs,
+  },
+  retryButton: {
+    marginTop: spacing.md,
+  },
   centerState: {
     flex: 1,
     alignItems: "center",
@@ -434,3 +530,16 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
+
+function getLoadErrorMessage(error: unknown, section: string) {
+  return error instanceof Error
+    ? error.message
+    : `Terjadi kesalahan saat memuat ${section}.`;
+}
+
+function getActiveTabError(
+  activeTab: BuildDetailTab,
+  errors: Record<BuildDetailTab, string | null>,
+) {
+  return errors[activeTab];
+}

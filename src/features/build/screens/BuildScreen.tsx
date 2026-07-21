@@ -20,6 +20,7 @@ export function BuildScreen() {
   );
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!motorcycleId || loading || errorMessage) {
@@ -79,7 +80,7 @@ export function BuildScreen() {
       return () => {
         isActive = false;
       };
-    }, [user]),
+    }, [reloadKey, user]),
   );
 
   if (loading) {
@@ -119,8 +120,8 @@ export function BuildScreen() {
             {errorMessage}
           </AppText>
 
-          <AppButton onPress={() => router.replace("/(tabs)/feed")}>
-            Kembali ke Feed
+          <AppButton onPress={() => setReloadKey((current) => current + 1)}>
+            Coba Lagi
           </AppButton>
         </View>
       </AppScreen>
